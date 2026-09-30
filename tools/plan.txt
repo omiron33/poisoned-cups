@@ -1,0 +1,28 @@
+# id scene | first line of the scene (prefix)
+00 s00-cup | INTRO
+01 s01-poison | You polish cups
+02 s02-fringes | Long fringes swing
+03 s03-tomb | White stone walls
+04 s04-prayers | Soft-spoke prayers
+05 s05-vipers | Brood of vipers
+06 s06-empire | You twist the truth
+07 s07-prophets | You honor prophets
+08 s08-see | Brood of vipers
+09 s09-gnat | You strain a gnat
+10 s10-loads | Heavy loads
+11 s11-widow | Blind guides smile
+12 s12-gate | You sell the gate
+13 s13-vipers2 | Brood of vipers
+14 s14-scrolls | You kiss the scrolls
+15 s15-graves | You paint the graves
+16 s16-see2 | Brood of vipers
+17 s17-we-see | You say
+18 s18-clean | You say
+19 s19-silver | Silver in your palms
+20 s20-door | You stand in the door
+21 s21-vipers3 | Brood of vipers
+22 s22-fall | Turn your hearts
+23 s23-reed | A cracked reed
+24 s24-bend | But brood of vipers
+25 s25-stones | The stones will speak
+26 s26-clean-cup | OUTRO

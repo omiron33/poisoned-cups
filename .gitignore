@@ -1,0 +1,11 @@
+media/
+intake/*.wav
+intake/*.m4a
+intake/*.mp3
+out/
+node_modules/
+*.mp4
+*.mkv
+.DS_Store
+._*
+intake/
