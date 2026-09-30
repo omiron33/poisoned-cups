@@ -105,3 +105,32 @@ in the frame, and the scene differs from its neighbours.
   line with them. See scenes/x-weapons.lyric.js. Use them for the hard hits (on kicks and key words)
   and mix with calmer idioms so it isn't frantic. Leave room: a lockOn bracket needs ~0.3 px padding
   round its word, so don't pack bracketed words tight against neighbours.
+
+## v2 (overrides anything above that conflicts)
+
+Read docs/BRIEF.md (v2) first: it is the author's scene-by-scene plan. Rules for v2:
+
+- No gloves (lib/x-gloves.js is retired), no gears or clockwork, no ruins or stone monuments as the
+  main look, no scroll or grave literalism, no redaction bars (redact() is now only an alias of
+  scan()), no flesh vipers: vipers are cables, braided conduit, fibre bundles or segmented robotic
+  serpents (lib/x-viper.js).
+- Palette: toxic green, deep purple, cold white, black, silver, occasional hot magenta; gold only
+  for Christ's authority. Wet concrete (`uGrime`), haze, fluorescent tubes, LED walls, rack lights.
+- lib/x-cyber.js (`CYBER_GLSL`, after STUDIO_GLSL): `neonFace(uv, smile, blind, seed)` for stylised
+  synthetic faces on screens (never realistic), `ledMask(uv, cell, centre)` for LED walls,
+  `glitchTear(fc, amt)` to tear the frame in bands on hits (call on fc first thing in shade(); keep
+  amt brief, 2 to 4 frames), `scanlines(y, density)`.
+- Type (lib/type.js, v2 voices): divine (God/I/My) gold-white Garamond capitals, luminous and never
+  distorted by any idiom; violent (magenta Anton); toxic (acid-green Anton); claim (light Inter
+  Tight capitals, ad copy); mercy (Garamond italic lavender); cite (mono); plain (Anton cold white).
+  Idioms: scan (scanline assembly), term (terminal typing with echo), misreg (colour plates
+  snapping into register), fracture, cascade, buffer (loading bar before the word), ghost (signal
+  echo), volt (voltage flicker), lockOn (HUD target), glitch, strike, slash, dossier (mono header
+  block over a line), plus flow, ringText, note, stamp, feed, receipt. Use `arm(ctx, words, t,
+  (w, i) => idiom, opts)` to lay out a line with them.
+- Readability gates (measured on the encoded film): every word 4.5:1 against what's behind it;
+  fully shown and resolved by 0.1 s after its onset and still readable 0.15 s after it ends; words
+  hold still for 8 frames after landing (no riding waves or pushing stacks during that time); no
+  word touching another or a label (leave ≥0.3 × size gaps); no camera move that stops dead (end
+  snaps on a spring or ≥6-frame ease). Call `carry(ctx, t, P)` first in every drawText.
+- Faces: stylised only (neonFace, silhouettes). No realistic faces, no real people, no logos.

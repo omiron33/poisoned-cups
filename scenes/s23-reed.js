@@ -1,127 +1,135 @@
 // 23 · "A cracked reed bruised / I will never crush or kill"
-// Among scattered gold trim in the rubble of the fallen empire (s22 ends there), on wet concrete: one green reed, cracked and bent at a node
-// but not broken off, and beside it a clay lamp whose wick only smoulders. Mercy: the warm light
-// gathers round them (the wick catches, the room warms) and nothing breaks. It ends on the flame's
-// glint, which s24 picks up.
-import { grade, rgb, orbit, linesFrom, spring, clamp01, ease, mix } from '/song/lib/look.js';
+// After the collapse, quiet. The film's one soft transition: the frame fades up out of the dark of
+// s22 into a dim warm pocket among the debris of the fallen control room: toppled dead screens,
+// a slumped stack of server slabs, glass shards on wet concrete. In the middle one thin green fibre
+// still stands out of a junction box, cracked and bent over at a node but not broken, its core
+// glowing faintly, light leaking at the crack; beside it a snapped antenna mast still blinks.
+// Nothing attacks. On "I" a warm gold-white light gathers softly over them and holds.
+import { grade, rgb, linesFrom, clamp01, ease, mix } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
-import { FLAME_GLSL } from '/song/lib/flame.js';
 
 const [L1, L2] = linesFrom('A cracked reed', 'I will never crush');
-const WICK = [0.36, 0.085, 0.2];
 
-export default (P) => {
-  const t0 = P.from;
+export function rig(P) {
   const tI = L2.words[0].start;
   const camera = (t) => {
-    const u = t - t0;
-    const push = ease.inOut3((t - (P.to - 1.6)) / 1.6);
-    return orbit(t, { target: mix([0.12, 0.42, 0.05], [0.3, 0.2, 0.18], push), yaw: 0.2 + 0.04 * u, pitch: 0.12 + 0.012 * u, dist: 2.0 - 0.07 * u - 0.5 * push, fov: 34, drift: 0.006 });
+    const u = t - P.from;
+    const k = ease.inOut3(u / (P.to - P.from));
+    const d = 0.004 * Math.sin(t * 0.6);
+    return { pos: [0.55 - 0.25 * k + d, 0.5 - 0.06 * k, 1.9 - 0.4 * k], target: [0.05, 0.42 - 0.04 * k, 0.0], fov: 38, roll: 0 };
   };
-  const warm = (t) => 0.15 + 0.45 * ease.inOut3((t - L1.words[0].start) / 3.0) + 0.4 * spring(t, tI, 0.9, 0.1);
+  const warm = (t) => ease.inOut3((t - tI + 0.1) / 1.2);
+  return { camera, tI, warm };
+}
+
+export default (P) => {
+  const R = rig(P);
   return {
     name: 's23-reed', from: P.from, to: P.to,
-    frag: '#define FIRE\n' + STUDIO_GLSL + FLAME_GLSL + /* glsl */ `
-uniform float uWarm, uFlame, uSway;
+    frag: STUDIO_GLSL + /* glsl */ `
+uniform float uWarm, uSway, uBlink, uFade;
 const vec3 K = vec3(0.0, 0.62, 0.0);
-vec3 tipDir() { float a = 0.95 + 0.04 * uSway; return vec3(sin(a), cos(a), 0.18); }
-float fireDen(vec3 p) {
-  vec3 w = vec3(${WICK.join(', ')});
-  if (length(p - w - vec3(0, 0.06, 0)) > 0.2) return 0.0;
-  return candleFlame(p, w + vec3(0, 0.012, 0), uFlame, 0.016, 3.0) * 1.3;
+vec3 midP() { float a = 0.55 + 0.03 * uSway; return K + vec3(sin(a), cos(a), 0.12) * 0.2; }
+vec3 tipP() { float a = 1.45 + 0.06 * uSway; return midP() + vec3(sin(a), cos(a), 0.2) * 0.22; }
+float reed(vec3 p) {
+  float s = sdRoundCone(p, vec3(0.0, 0.05, 0.0), K, 0.008, 0.0065);
+  s = min(s, sdRoundCone(p, K, midP(), 0.0065, 0.005));
+  s = min(s, sdRoundCone(p, midP(), tipP(), 0.005, 0.0028));
+  // ferrule rings where the sheath is jointed
+  s = min(s, length(vec2(length(p.xz) - 0.011, p.y - 0.3)) - 0.004);
+  return s;
 }
+// a small sensor pod at the snapped mast's hinge
+float sdCylinderish(vec3 q) { return sdRoundBox(q - vec3(0.0, 0.66, 0.0), vec3(0.025, 0.04, 0.025), 0.008); }
 float mapObj(vec3 p, out int id) {
   id = 1;
-  float d = 1e9;
-  // the reed: a tapering stalk to the crack, then the bruised top bent over but still attached
-  float s = sdRoundCone(p, vec3(0.0, 0.0, 0.0), K, 0.02, 0.016);
-  vec3 T = K + normalize(tipDir()) * 0.55;
-  s = min(s, sdRoundCone(p, K, T, 0.016, 0.006));
-  // nodes
-  float nd = length(vec2(length(p.xz) - 0.019, (p.y - 0.28))) - 0.006;
-  nd = min(nd, length(vec2(length(p.xz) - 0.017, (p.y - 0.5))) - 0.006);
-  s = min(s, nd);
-  // a leaf blade from the lower node
-  vec3 lq = p - vec3(-0.08, 0.5, 0.0);
-  lq.xy *= rot(-0.5);
-  s = min(s, sdEllipsoid(lq, vec3(0.1, 0.22, 0.004)));
-  if (s < d) { d = s; id = 1; }
-  // clay lamp
-  vec3 lp = p - vec3(${WICK[0]}, 0.0, ${WICK[2]});
-  float lamp = sdCyl(lp - vec3(0, 0.035, 0), 0.075, 0.03) - 0.012;
-  lamp = max(lamp, -(length(lp - vec3(0, 0.1, 0)) - 0.07));
-  lamp = smin(lamp, sdCapsule(lp, vec3(0.0, 0.05, 0.0), vec3(0.0, 0.05, 0.1), 0.02), 0.02);
-  if (lamp < d) { d = lamp; id = 2; }
-  float wick = sdCapsule(lp, vec3(0.0, 0.05, 0.02), vec3(0.0, 0.085, 0.0), 0.004);
-  if (wick < d) { d = wick; id = 3; }
-  // rubble: broken concrete chunks round them
-  if (length(p - vec3(0.0, 0.1, 0.0)) < 1.3) {
-    for (int i = 0; i < 9; i++) {
+  float d = reed(p);
+  // the junction box it grows from
+  float jb = sdRoundBox(p - vec3(0.0, 0.03, 0.0), vec3(0.06, 0.03, 0.05), 0.006);
+  if (jb < d) { d = jb; id = 2; }
+  // the snapped antenna mast: a lower section standing, the top hanging off at an angle
+  vec3 aq = p - vec3(-0.42, 0.0, -0.25);
+  float an = sdCapsule(aq, vec3(0.0), vec3(0.0, 0.7, 0.0), 0.008);
+  an = min(an, sdCapsule(aq, vec3(0.0, 0.02, 0.0), vec3(0.08, 0.0, 0.05), 0.006));
+  an = min(an, sdCapsule(aq, vec3(0.0, 0.02, 0.0), vec3(-0.08, 0.0, 0.05), 0.006));
+  an = min(an, sdCapsule(aq, vec3(0.0, 0.02, 0.0), vec3(0.0, 0.0, -0.09), 0.006));
+  an = min(an, sdCapsule(aq, vec3(0.0, 0.7, 0.0), vec3(0.06, 0.48, 0.08), 0.005));
+  an = min(an, sdCylinderish(aq));
+  if (an < d) { d = an; id = 3; }
+  float led = length(aq - vec3(0.06, 0.48, 0.08)) - 0.01;
+  if (led < d) { d = led; id = 4; }
+  // debris of the fallen control room
+  if (length(p.xz - vec2(0.0, -0.3)) < 2.4) {
+    for (int i = 0; i < 7; i++) {
       float fi = float(i);
-      float a = fi * 2.4 + 0.6, r = 0.3 + 0.45 * hash11(fi + 1.3);
-      vec3 c = vec3(cos(a) * r - 0.1, 0.0, sin(a) * r * 0.7 - 0.15);
-      if (length(c.xz - vec2(${WICK[0]}, ${WICK[2]})) < 0.32 || c.z > 0.15) c.z -= 0.45;   // keep the lamp in view
-      vec3 b = vec3(0.07, 0.05, 0.06) + 0.1 * vec3(hash11(fi + 3.0), hash11(fi + 5.0) * 0.6, hash11(fi + 7.0));
-      vec3 q = p - c - vec3(0.0, b.y * 0.6, 0.0);
-      q.xz *= rot(fi * 1.7); q.xy *= rot(0.3 * (hash11(fi + 9.0) - 0.5));
-      // every third piece is gold trim from the fallen empire: a thin bent bar
-      bool gold = mod(fi, 3.0) < 0.5;
-      if (gold) b = vec3(b.x * 1.6, 0.012, 0.018);
-      float rb = sdRoundBox(q, b, gold ? 0.006 : 0.008) + (gold ? 0.0 : 0.004 * (vnoise(q * 22.0) - 0.5));
-      if (rb < d) { d = rb; id = gold ? 5 : 4; }
+      float a = fi * 2.1 + 0.9, r = 0.45 + 0.5 * hash11(fi + 1.3);
+      vec3 c = vec3(cos(a) * r, 0.0, sin(a) * r * 0.8 - 0.35);
+      if (c.z > 0.2) c.z -= 0.7;
+      vec3 b = i < 3 ? vec3(0.28, 0.17, 0.012) : vec3(0.16, 0.03, 0.12) * (0.8 + 0.5 * hash11(fi + 3.0));
+      vec3 q = p - c - vec3(0.0, i < 3 ? 0.1 : 0.03, 0.0);
+      q.xz *= rot(fi * 1.7);
+      if (i < 3) q.yz *= rot(-0.9 - 0.4 * hash11(fi + 5.0)); else q.xy *= rot(0.2 * (hash11(fi + 9.0) - 0.5));
+      float bx = sdRoundBox(q, b, 0.006);
+      if (bx < d) { d = bx; id = i < 3 ? 5 : 6; }
     }
-  } else d = min(d, length(p - vec3(0.0, 0.1, 0.0)) - 1.2);
+  } else d = min(d, length(p.xz - vec2(0.0, -0.3)) - 2.3);
   return d;
 }
 Mat material(int id, vec3 p, vec3 n) {
   if (id == 1) {
-    // living green with fibres; bruised yellow-brown round the crack, split fibres dark
-    float fib = vnoise(vec2(atan(p.z, p.x) * 20.0, p.y * 4.0));
-    vec3 g = mix(vec3(0.05, 0.22, 0.03), vec3(0.14, 0.34, 0.06), fib);
-    float br = exp(-length(p - K) * 14.0);
-    g = mix(g, vec3(0.3, 0.2, 0.05), br);
-    g *= 1.0 - 0.7 * br * smoothstep(0.6, 0.8, vnoise(vec2(atan(p.z, p.x) * 30.0, p.y * 60.0)));
-    Mat m = M(g, 0.4, 0.0); m.sheen = 0.5; m.clear = 0.3;
+    // a glass fibre in a green sheath: faint core light, a bright leak at the cracked node
+    Mat m = M(vec3(0.03, 0.12, 0.05), 0.25, 0.0); m.clear = 0.8;
+    float crack = exp(-length(p - K) * 45.0);
+    float tip = exp(-length(p - tipP()) * 60.0);
+    float fib = 0.6 + 0.4 * vnoise(vec2(atan(p.z, p.x) * 12.0, p.y * 40.0));
+    m.emit = vec3(0.12, 0.7, 0.2) * (0.25 * fib + 3.0 * crack + 2.0 * tip) * (0.8 + 0.2 * sin(uTime * 2.1));
+    m.alb = mix(m.alb, vec3(0.2, 0.18, 0.08), crack * 0.6);
     return m;
   }
-  if (id == 2) return dirty(M(vec3(0.42, 0.2, 0.1), 0.7, 0.0), p, 0.4);
-  if (id == 5) { Mat m = GOLD(); m.rough = 0.22; return dirty(m, p, 0.5); }
-  if (id == 3) { Mat m = M(vec3(0.05), 0.8, 0.0); m.emit = vec3(2.0, 0.6, 0.1) * smoothstep(0.06, 0.085, p.y) * (0.6 + uWarm); return m; }
-  Mat m = M(vec3(0.3, 0.29, 0.27) * (0.7 + 0.5 * fbm(p * 9.0, 3)), 0.85, 0.0);
-  return dirty(m, p, 0.9);
+  if (id == 2) return dirty(M(vec3(0.05, 0.05, 0.055), 0.4, 0.5), p, 0.6);
+  if (id == 3) return dirty(M(vec3(0.5, 0.5, 0.52), 0.3, 1.0), p, 0.5);
+  if (id == 4) { Mat m = M(vec3(0.05), 0.3, 0.0); m.emit = vec3(0.3, 1.8, 0.4) * uBlink; return m; }
+  if (id == 5) {
+    // a toppled dead screen: black glass with a spider crack, a few stuck pixels
+    Mat m = M(vec3(0.015), 0.05, 0.0); m.clear = 1.0;
+    float e = voronoiEdge(p.xz * 14.0 + p.y * 9.0).x;
+    m.rough = mix(0.5, 0.05, smoothstep(0.0, 0.04, e));
+    m.alb += vec3(0.12) * smoothstep(0.03, 0.0, e) * step(0.5, vnoise(p.xz * 6.0));
+    return m;
+  }
+  if (id == 6) return dirty(M(vec3(0.1, 0.1, 0.11), 0.35, 0.8), p, 0.7);
+  return M(vec3(0.3), 0.8, 0.0);
 }
 vec3 shade(vec2 fc) {
   vec3 ro; vec3 rd = camRay(fc, ro);
   float depth;
-  return studio(ro, rd, depth);
+  return studio(ro, rd, depth) * uFade;
 }`,
     uniforms: {
       ...STUDIO_UNIFORMS,
-      uCycA: rgb('120, 82, 56', 1.0), uCycB: rgb('40, 30, 28', 0.8),
-      uFloorCol: rgb('70, 62, 56', 1.0), uFloorRough: 0.1, uFloorGrain: 1.5,
-      uGrime: 1.0, uHaze: 0.08, uHazeCol: [0.1, 0.07, 0.045],
-      uKeyDir: [-0.4, 0.85, 0.3], uKeyCol: [1.6, 1.7, 1.9], uKeySize: 0.4,
-      uRimA: [2.2, 1.0, 0.3], uRimB: [1.0, 1.0, 1.1],
-      uP1: [WICK[0], WICK[1] + 0.09, WICK[2]], uP1c: [0, 0, 0],
-      uP2: [-0.9, 0.9, 1.2], uP2c: [0, 0, 0],
-      uWarm: 0, uFlame: 0.05, uSway: 0,
+      uCycA: rgb('112, 76, 58', 1.2), uCycB: rgb('22, 16, 18', 1.0),
+      uFloorCol: rgb('58, 56, 58', 1.0), uFloorRough: 0.12, uFloorGrain: 0.5,
+      uGrime: 0.95, uHaze: 0.06, uHazeCol: [0.06, 0.045, 0.035],
+      uKeyDir: [-0.4, 0.85, 0.3], uKeyCol: [1.7, 1.55, 1.4], uKeySize: 0.4,
+      uRimA: [2.0, 1.1, 0.6], uRimB: [0.8, 1.5, 0.9],
+      uP1: [0.02, 0.66, 0.1], uP1c: [0.05, 0.3, 0.08],
+      uP2: [0.15, 1.0, 0.45], uP2c: [0, 0, 0],
+      uWarm: 0, uSway: 0, uBlink: 0, uFade: 0,
     },
-    camera,
+    camera: R.camera,
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
-      const w = warm(t);
-      const glint = 0.8 * ease.inOut3((t - (P.to - 0.6)) / 0.6);
-      const fl = 0.85 + 0.15 * Math.sin(t * 13.0) * Math.sin(t * 7.3);
+      const w = R.warm(t);
       u.uWarm.value = w;
-      u.uFlame.value = 0.035 + 0.075 * w;
-      u.uSway.value = Math.sin((t - t0) * 1.3);
-      u.uP1c.value = [2.4, 1.1, 0.35].map((c) => c * (w + glint) * fl * 0.5);
-      u.uP2c.value = [3.2, 2.0, 1.0].map((c) => c * w * 1.3);
-      // cold, flat light at first; warm gathers
-      u.uKeyCol.value = mix([1.6, 1.7, 1.9], [3.0, 2.3, 1.5], w);
-      u.uCycA.value = rgb('120, 82, 56', 0.6 + 0.8 * w);
-      u.uExpo.value = 1.0 + 0.25 * glint;
+      u.uSway.value = Math.sin((t - P.from) * 1.1);
+      u.uBlink.value = 0.3 + 0.7 * Math.pow(0.5 + 0.5 * Math.sin((t - P.from) * 2.6), 6);
+      // the soft transition: the frame fades up out of s22's dark
+      u.uFade.value = 0.12 + 0.88 * ease.inOut3((t - P.from) / 0.9);
+      // warm gold-white light gathers over the reed on "I" and holds
+      u.uP2c.value = [3.2, 2.5, 1.5].map((c) => c * (0.25 + 1.1 * w));
+      u.uKeyCol.value = mix([1.7, 1.55, 1.4], [2.8, 2.3, 1.7], w);
+      u.uCycA.value = rgb('112, 76, 58', 1.2 + 0.7 * w);
     },
-    post(t) { return grade(t, { exposure: 1.0, vignette: 0.45, bloom: 0.1 }); },
+    post(t) { return grade(t, { exposure: 1.0, vignette: 0.5, bloom: 0.1 }); },
   };
 };

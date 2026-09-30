@@ -1,137 +1,202 @@
 // 10 · "Heavy loads / That you never lift too"
-// Outside: the brass camel lands on the conveyor and rides off; two crates bound in black straps
-// come down on their lifting straps under a sodium lamp and land on "loads" with a thud that stops
-// the belt. Inside: a snap cut to the top strap: an empty white glove hovers a finger's width above
-// it, pointing, never touching; on "lift" it pulls back and away, toward the titanium chalice on
-// its plinth, where the camera ends.
-import { ease, grade, rgb, orbit, keys, spring, linesFrom, clamp01 } from '/song/lib/look.js';
+// Outside: an automated conveyor runs endless crates (device cases, debt ledgers, legal packets,
+// biometric dossiers, compliance modules) past a line of anonymous user silhouettes, bowed and
+// backlit in the haze. An industrial robot arm swings a crate off the belt and drops it onto the
+// load already on one silhouette's shoulders on "loads": the figure sags, the frame jolts.
+// Inside: on "That" the camera tilts up and reveals what is above: three glossy executive control
+// pods hovering in cold white light, untouched, drifting a little higher on "lift".
+import { ease, grade, rgb, orbit, spring, linesFrom, clamp01 } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { S0910_GLSL } from '/song/lib/x-s09-s10.js';
-import { GLOVE_GLSL } from '/song/lib/x-gloves.js';
-import { CUP_GLSL } from '/song/lib/x-cup.js';
 
 const [LH, LN] = linesFrom('Heavy loads', 'That you never lift too');
 const setV = (u, k, a) => { const v = u[k].value; if (v && v.set) v.set(...a); else u[k].value = a; };
+const FIG_Z = -1.15;
+const TARGET_X = 0.6;                     // the silhouette who takes this load
 
-export const CRATE_TOP = 0.25 + 0.84;         // top strap of the stack
-export const GLOVE_S = 0.62;                  // glove scale
-export const CUP_AT = [1.55, 0.0, -0.55];     // chalice plinth
-
-export function loadsTimes(P) {
+export function loadsTimes() {
   const tLoads = LH.words[1].start;
+  const tThat = LN.words[0].start;
   const tLift = LN.words.find((w) => /lift/i.test(w.w)).start;
-  const tCut = LN.words[0].start - 0.2;
-  return { tLoads, tLift, tCut };
-}
-// glove: position of its cuff (glove frame origin) over time
-export function glovePos(P, t) {
-  const { tLift } = loadsTimes(P);
-  const hover = [0.12, CRATE_TOP + 0.022 + 0.42 * GLOVE_S, 0.13];
-  const k = ease.inOut3((t - tLift) / 1.0);
-  const bob = 0.004 * Math.sin(t * 3.1);
-  const away = [CUP_AT[0] - 0.4, CUP_AT[1] + 1.05, CUP_AT[2] + 0.3];
-  return [hover[0] + (away[0] - hover[0]) * k, hover[1] + bob + (away[1] - hover[1]) * k + 0.1 * Math.sin(Math.PI * k), hover[2] + (away[2] - hover[2]) * k];
+  return { tLoads, tThat, tLift };
 }
 export function loadsCamera(P) {
-  const { tLoads, tLift, tCut } = loadsTimes(P);
+  const { tLoads, tThat, tLift } = loadsTimes();
   return (t) => {
     const u = t - P.from;
-    if (t < tCut) {
-      // wide and low on the belt, the crates coming down; a small jolt on the landing
-      const jolt = t > tLoads ? 0.02 * Math.exp(-(t - tLoads) * 10) * Math.sin((t - tLoads) * 50) : 0;
-      return orbit(t, { target: [0.25, 0.75 + jolt, 0], yaw: 0.62 - 0.03 * u, pitch: 0.16, dist: 3.6 - 0.12 * u, fov: 34, drift: 0.006 });
-    }
-    // snap in on the gap between the glove's finger and the strap; after "lift" follow it to the cup
-    const g = glovePos(P, t);
-    const k = ease.inOut3((t - tLift + 0.05) / 0.7);
-    // after "lift": a medium shot holding the crate stack, the withdrawing glove and the chalice
-    const tx = [0.1 + 0.62 * k, CRATE_TOP + 0.08 + (0.9 - CRATE_TOP - 0.08) * k, -0.22 * k];
-    return orbit(t, { target: tx, yaw: 0.45 + 0.04 * (t - tCut) - 0.1 * k, pitch: 0.08 + 0.14 * k, dist: 0.95 - 0.04 * (t - tCut) + 2.35 * k, fov: 30 + 4 * k, drift: 0.005 });
+    const jolt = t > tLoads ? 0.03 * Math.exp(-(t - tLoads) * 9) * Math.sin((t - tLoads) * 55) : 0;
+    const k = ease.inOut3((t - (tThat - 0.2)) / 1.1);
+    const m = (a, b) => a + (b - a) * k;
+    return orbit(t, {
+      target: [m(0.2, 0.25), m(0.95, 2.35) + jolt, m(-0.5, -0.7)],
+      yaw: 0.42 - 0.025 * u,
+      pitch: m(0.12, -0.2),
+      dist: m(4.3 - 0.12 * u, 4.1 - 0.05 * (t - tThat)),
+      fov: 38, drift: 0.006,
+    });
   };
+}
+// two-bone arm: shoulder S, wrist W, lengths a, b; the elbow bends up and back
+function elbow(S, W, a, b) {
+  const d = W.map((v, i) => v - S[i]);
+  const L = Math.min(a + b - 1e-3, Math.hypot(...d));
+  const f = d.map((v) => v / Math.hypot(...d));
+  const x = (a * a - b * b + L * L) / (2 * L);
+  const h = Math.sqrt(Math.max(0, a * a - x * x));
+  // bend direction: up, made perpendicular to the reach
+  let up = [0, 1, 0];
+  const dp = up[0] * f[0] + up[1] * f[1] + up[2] * f[2];
+  up = up.map((v, i) => v - dp * f[i]);
+  const ul = Math.hypot(...up) || 1;
+  return S.map((v, i) => v + f[i] * x + (up[i] / ul) * h);
 }
 
 export default (P) => {
   const t0 = P.from;
-  const { tLoads } = loadsTimes(P);
-  const crateY = (t) => {
-    if (t < tLoads) return Math.max(0, (tLoads - t) * 0.9);
-    const v = t - tLoads;
-    return 0.012 * Math.exp(-v * 12) * Math.abs(Math.sin(v * 30));
+  const { tLoads, tThat, tLift } = loadsTimes();
+  const SH = [TARGET_X + 0.05, 0.9, -0.55];
+  const pick = [TARGET_X + 0.25, 0.75, 0.0];
+  const drop = [TARGET_X, 2.09, FIG_Z - 0.2];
+  // the wrist: lifts the crate off the belt, swings it over, drops it on "loads", then returns
+  const wrist = (t) => {
+    const a = ease.inOut3((t - (tLoads - 0.75)) / 0.6);
+    const back = ease.inOut3((t - (tLoads + 0.25)) / 0.8);
+    const p = pick.map((v, i) => v + (drop[i] - v) * a + 0.35 * Math.sin(Math.PI * a) * (i === 1 ? 1 : 0));
+    return p.map((v, i) => v + (pick[i] - v) * back);
   };
-  const camelLand = t0 + 0.15;
-  const camelY = (t) => (t < camelLand ? 0.25 + 0.5 * 9.8 * (camelLand - t) ** 2 : 0.25 + 0.04 * Math.exp(-(t - camelLand) * 9) * Math.abs(Math.sin((t - camelLand) * 18)));
-  const run = (t) => (t < tLoads ? 0.9 * (t - t0) : 0.9 * (tLoads - t0) + 0.9 * (1 - Math.exp(-(t - tLoads) * 8)) / 8);
+  const run = (t) => 0.55 * (t - t0);
   return {
     name: 's10-loads', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + S0910_GLSL + GLOVE_GLSL + CUP_GLSL + /* glsl */ `
-uniform float uCrateY, uRun, uCamelX, uCamelY, uStrapUp;
-uniform vec3 uGlove;
-const float CS = 0.3;   // crate half size x
-const vec3 CUPAT = vec3(${CUP_AT.join(', ')});
-float sdCrates(vec3 p) {
-  vec3 q = p - vec3(0.0, BELT_TOP + uCrateY, 0.0);
-  float bb = sdBox(q - vec3(0.0, 0.42, 0.0), vec3(0.34, 0.45, 0.3));
-  // the lifting straps run up out of frame
-  vec3 s = vec3(abs(q.x) - 0.12, q.y, q.z);
-  float lift = sdBox(s - vec3(0.0, 4.0 + uStrapUp, 0.0), vec3(0.03, 3.2, 0.007));
-  if (bb > 0.05) return min(bb, lift);
-  // two crates, the top one a touch smaller and turned
-  float c1 = sdRoundBox(q - vec3(0.0, 0.22, 0.0), vec3(0.3, 0.2, 0.24), 0.012);
-  vec3 q2 = q - vec3(0.02, 0.63, 0.0);
-  float a = 0.08; q2.xz = vec2(q2.x * cos(a) - q2.z * sin(a), q2.x * sin(a) + q2.z * cos(a));
-  float c2 = sdRoundBox(q2, vec3(0.27, 0.19, 0.22), 0.012);
-  float d = min(c1, c2);
-  // straps round them: bands where a slightly bigger box meets two vertical planes
-  float st1 = max(sdRoundBox(q - vec3(0.0, 0.22, 0.0), vec3(0.3, 0.2, 0.24) + 0.008, 0.015), abs(abs(q.x) - 0.12) - 0.03);
-  float st2 = max(sdRoundBox(q2, vec3(0.27, 0.19, 0.22) + 0.008, 0.015), abs(abs(q2.x) - 0.12) - 0.03);
-  float st = min(st1, st2);
-  return min(min(d, st), lift) ;
+    frag: STUDIO_GLSL + S0910_GLSL + /* glsl */ `
+uniform float uRun, uSag, uCrateOn, uPodY, uHeld;
+uniform vec3 uArmS, uArmE, uArmW;
+const float FZ = ${FIG_Z.toFixed(2)};
+const float TX = ${TARGET_X.toFixed(2)};
+float gCell;
+// crates on the belt: one every 0.9 m, each a different kind by its cell
+float sdBeltCrates(vec3 p) {
+  float x = p.x + uRun;
+  float c = floor(x / 0.9 + 0.5);
+  vec3 q = vec3(x - c * 0.9, p.y - BELT_TOP, p.z);
+  float h = hash11(c * 1.37 + 4.0);
+  gCell = c;
+  vec3 hs = h < 0.25 ? vec3(0.22, 0.12, 0.2) : h < 0.5 ? vec3(0.18, 0.2, 0.18) : h < 0.75 ? vec3(0.26, 0.07, 0.19) : vec3(0.2, 0.16, 0.2);
+  return sdRoundBox(q - vec3(0.0, hs.y, 0.0), hs, 0.012);
+}
+// the load on a figure's back: a stack of crates, n high
+float sdLoad(vec3 q, float n) {
+  float d = 1e9;
+  for (int i = 0; i < 4; i++) {
+    if (float(i) >= n) break;
+    vec3 r = q - vec3(0.02 * sin(float(i) * 2.1), 0.13 + float(i) * 0.25, 0.0);
+    r.xz = rot(0.12 * sin(float(i) * 3.3)) * r.xz;
+    d = min(d, sdRoundBox(r, vec3(0.22, 0.11, 0.17), 0.01));
+  }
+  return d;
+}
+// an anonymous user: a bowed, backlit silhouette with a load on its shoulders
+float sdFigure(vec3 q, float sag, float n, out float isLoad) {
+  isLoad = 0.0;
+  float bb = sdBox(q - vec3(0.0, 1.3, 0.0), vec3(0.4, 1.35, 0.35));
+  if (bb > 0.1) return bb;
+  q.y /= sag;
+  vec3 r = vec3(abs(q.x), q.y, q.z);
+  float legs = sdCapsule(r, vec3(0.09, 0.05, 0.0), vec3(0.09, 0.86, 0.0), 0.065);
+  float torso = sdRoundCone(q, vec3(0.0, 0.9, 0.0), vec3(0.0, 1.33, 0.09), 0.14, 0.17);
+  float head = sdSphere(q - vec3(0.0, 1.5, 0.21), 0.095);
+  head = smin(head, sdCapsule(q, vec3(0.0, 1.38, 0.1), vec3(0.0, 1.47, 0.18), 0.05), 0.03);
+  float arms = sdCapsule(r, vec3(0.19, 1.3, 0.08), vec3(0.23, 0.88, 0.16), 0.045);
+  float d = smin(min(legs, torso), head, 0.05);
+  d = smin(d, arms, 0.05);
+  float ld = sdLoad(q - vec3(0.0, 1.4, -0.2), n);
+  if (ld < d) { d = ld; isLoad = 1.0; }
+  return d * min(sag, 1.0);
+}
+// the robot arm: base, upper arm, forearm, a two-finger claw, and a crate while held
+float sdArm(vec3 p) {
+  float bb = length(p - (uArmS + uArmW) * 0.5) - (length(uArmW - uArmS) * 0.5 + 0.9);
+  if (bb > 0.1) return bb;
+  float base = sdCyl(p - vec3(uArmS.x, uArmS.y * 0.5, uArmS.z), 0.14, uArmS.y * 0.5);
+  float d = min(base, sdSphere(p - uArmS, 0.12));
+  d = min(d, sdCapsule(p, uArmS, uArmE, 0.07));
+  d = min(d, sdSphere(p - uArmE, 0.085));
+  d = min(d, sdCapsule(p, uArmE, uArmW + vec3(0.0, 0.14, 0.0), 0.055));
+  vec3 w = p - uArmW;
+  vec3 r = vec3(abs(w.x) - 0.2 * mix(1.0, 1.15, 1.0 - uHeld), w.y - 0.02, w.z);
+  d = min(d, sdBox(r, vec3(0.015, 0.1, 0.05)) - 0.005);
+  d = min(d, sdBox(w - vec3(0.0, 0.14, 0.0), vec3(0.22, 0.02, 0.06)) - 0.005);
+  return d;
+}
+// an executive control pod: glossy black ovoid, smoked canopy, a cold white ring light
+float sdPod(vec3 q) {
+  float b = length(q) - 0.75;
+  if (b > 0.1) return b;
+  // a long, low cabin: a flattened capsule with a blunt tail fin
+  vec3 s = q * vec3(1.0, 1.35, 1.0);
+  float body = sdCapsule(s, vec3(-0.42, 0.0, 0.0), vec3(0.42, 0.0, 0.0), 0.24) / 1.35;
+  body = smax(body, -q.y - 0.12, 0.04);
+  float fin = sdRoundBox(q - vec3(-0.5, 0.12, 0.0), vec3(0.12, 0.06, 0.012), 0.01);
+  return min(body, fin);
+}
+vec3 podAt(int i) {
+  if (i == 0) return vec3(-1.25, uPodY + 0.1 * sin(uTime * 0.9), -0.35);
+  if (i == 1) return vec3(0.35, uPodY + 0.35 + 0.1 * sin(uTime * 0.8 + 2.0), -0.9);
+  return vec3(1.75, uPodY - 0.05 + 0.1 * sin(uTime * 1.1 + 4.0), -0.45);
 }
 float mapObj(vec3 p, out int id) {
   id = 6;
   float d = sdBelt(p);
-  float c = sdCrates(p);
-  if (c < d) {
-    d = c;
-    // strap or wood?
-    vec3 q = p - vec3(0.0, BELT_TOP + uCrateY, 0.0);
-    id = abs(abs(q.x) - 0.12) < 0.031 ? 8 : 7;
-    if (q.y > 0.84) id = 8;
+  float c = sdBeltCrates(p);
+  if (c < d) { d = c; id = 7; }
+  // four silhouettes on 1.2 m spacing; the one at TX takes this load
+  float fi = clamp(floor((p.x + 1.8) / 1.2 + 0.5), 0.0, 3.0);
+  float fx = -1.8 + fi * 1.2;
+  float isTarget = step(abs(fx - TX), 0.01);
+  float n = isTarget > 0.5 ? 2.0 + uCrateOn : 1.0 + mod(fi, 2.0) + step(2.5, fi);
+  float isLoad;
+  float f = sdFigure(p - vec3(fx, 0.0, FZ), isTarget > 0.5 ? uSag : 1.0, n, isLoad);
+  if (f < d) { d = f; id = isLoad > 0.5 ? 9 : 8; }
+  float a = sdArm(p);
+  if (a < d) { d = a; id = 10; }
+  if (uHeld > 0.5) {
+    float cr = sdRoundBox(p - uArmW + vec3(0.0, 0.04, 0.0), vec3(0.2, 0.1, 0.16), 0.01);
+    if (cr < d) { d = cr; id = 9; }
   }
-  float cm = sdCamelAt(p - vec3(uCamelX, uCamelY, 0.0));
-  if (cm < d) { d = cm; id = 5; }
-  // the glove, fingers down, index pointing at the strap
-  vec3 gq = p - uGlove;
-  gq = vec3(-gq.x, -gq.y, gq.z);
-  float ta = 0.0; gq.yz = vec2(gq.y * cos(ta) - gq.z * sin(ta), gq.y * sin(ta) + gq.z * cos(ta));
-  float gb = gloveBound(gq / ${GLOVE_S.toFixed(3)}) * ${GLOVE_S.toFixed(3)};
-  if (gb < d) {
-    float g = glove(gq / ${GLOVE_S.toFixed(3)}, GLOVE_POINT, 1.0) * ${GLOVE_S.toFixed(3)};
-    if (g < d) { d = g; id = 9; }
+  for (int i = 0; i < 3; i++) {
+    float pd = sdPod(p - podAt(i));
+    if (pd < d) { d = pd; id = 11; }
   }
-  // the chalice on its plinth, back right
-  vec3 cq = p - CUPAT;
-  float pl = sdRoundBox(cq - vec3(0.0, 0.3, 0.0), vec3(0.25, 0.3, 0.25), 0.01);
-  if (pl < d) { d = pl; id = 10; }
-  float ch = chalice((cq - vec3(0.0, 0.6, 0.0)) / 0.45) * 0.45;
-  if (ch < d) { d = ch; id = 11; }
   return d;
 }
+Mat crateMat(vec3 p, float kind) {
+  // device cases, ledgers, legal packets, biometric dossiers, compliance modules
+  Mat m = M(vec3(0.06, 0.06, 0.07), 0.35, 0.3);
+  if (kind < 0.25) { m.emit = vec3(0.3, 2.2, 0.6) * step(0.985, fract(p.y * 20.0 + 0.5)) * 0.5; }
+  else if (kind < 0.5) { m = M(vec3(0.62, 0.62, 0.6), 0.5, 0.0); m.alb *= 0.7 + 0.3 * step(0.5, fract(p.y * 90.0)); }
+  else if (kind < 0.75) { m = M(vec3(0.1, 0.09, 0.12), 0.45, 0.0); m.emit = vec3(2.2, 0.2, 1.1) * step(abs(fract(p.x * 3.0) - 0.5), 0.03) * 0.6; }
+  else { m = SILVER(); m.rough = 0.35; m.alb *= 0.75 + 0.25 * step(0.5, fract(p.x * 40.0)); }
+  return dirty(m, p * 2.0, 0.4);
+}
 Mat material(int id, vec3 p, vec3 n) {
-  if (id == 6) return beltMat(p, -uRun);
-  if (id == 5) return camelMat(p);
-  if (id == 7) {
-    // weathered crate boards
-    vec3 q = p - vec3(0.0, BELT_TOP + uCrateY, 0.0);
-    float board = smoothstep(0.0, 0.01, abs(fract(q.y * 10.0) - 0.5) - 0.46);
-    Mat m = M(vec3(0.42, 0.3, 0.19) * (0.75 + 0.35 * vnoise(vec2(q.x * 3.0, q.y * 60.0))), 0.7, 0.0);
-    m.alb *= 1.0 - 0.6 * board;
-    return dirty(m, p * 2.0, 0.6);
+  if (id == 6) return beltMat(p, uRun);
+  if (id == 7) { sdBeltCrates(p); return crateMat(p, hash11(gCell * 1.37 + 4.0)); }
+  if (id == 8) { Mat m = M(vec3(0.018, 0.018, 0.022), 0.7, 0.0); m.sheen = 0.4; return m; }
+  if (id == 9) return crateMat(p, hash13(floor(p * 4.0)));
+  if (id == 10) {
+    Mat m = M(vec3(0.72, 0.73, 0.76), 0.3, 1.0);
+    m.alb *= 0.8 + 0.2 * step(0.5, fract(p.y * 6.0));
+    return dirty(m, p * 2.5, 0.45);
   }
-  if (id == 8) { Mat m = M(vec3(0.03, 0.03, 0.035), 0.45, 0.0); m.sheen = 0.5; return dirty(m, p * 3.0, 0.3); }
-  if (id == 9) return gloveMat(p);
-  if (id == 10) { Mat m = M(vec3(0.62, 0.62, 0.6), 0.35, 0.0); return dirty(m, p * 2.0, 0.5); }
-  return cupTi(p - CUPAT - vec3(0.0, 0.6, 0.0), n);
+  // pods: glossy black lacquer, a smoked canopy lit from inside, the ring a cold white strip
+  int pi = 0; float best = 1e9;
+  for (int i = 0; i < 3; i++) { float dd = length(p - podAt(i)); if (dd < best) { best = dd; pi = i; } }
+  vec3 q = p - podAt(pi);
+  Mat m = LACQUER(vec3(0.015, 0.015, 0.02)); m.rough = 0.08;
+  // a smoked window band lit cold from inside, a hairline white light strip, a magenta keel line
+  if (abs(q.y - 0.05) < 0.045 && abs(q.x) < 0.36) { m = M(vec3(0.02), 0.03, 0.0); m.clear = 1.0; m.emit = vec3(0.5, 0.55, 0.7) * (0.6 + 0.4 * step(0.5, fract(q.x * 7.0))); }
+  if (abs(q.y + 0.045) < 0.008) m.emit = vec3(3.0, 3.2, 3.6);
+  if (q.y < -0.1 && abs(length(q.xz * vec2(0.62, 1.0)) - 0.2) < 0.012) m.emit = vec3(1.6, 0.15, 0.9) * 0.8;
+  return m;
 }
 vec3 shade(vec2 fc) {
   vec3 ro; vec3 rd = camRay(fc, ro);
@@ -140,28 +205,33 @@ vec3 shade(vec2 fc) {
 }`,
     uniforms: {
       ...STUDIO_UNIFORMS,
-      uCycA: rgb('120, 88, 60', 1.3), uCycB: rgb('40, 32, 28', 1.0),
-      uFloorCol: rgb('80, 74, 66', 0.7), uFloorRough: 0.1, uGrime: 0.9,
-      uKeyDir: [-0.35, 1.0, 0.4], uKeyCol: [3.4, 2.0, 0.8], uKeySize: 0.3,
-      uRimA: [3.0, 1.6, 0.5], uRimB: [2.2, 2.4, 2.6],
-      uHaze: 0.06, uHazeCol: [0.11, 0.075, 0.045],
-      uCrateY: 0, uRun: 0, uStrapUp: 0, uCamelX: 0, uCamelY: 0.25, uGlove: [0, 5, 0],
+      uCycA: rgb('96, 120, 104', 1.6), uCycB: rgb('34, 28, 48', 1.2),
+      uFloorCol: rgb('56, 58, 60', 0.7), uFloorRough: 0.1, uGrime: 0.95,
+      uKeyDir: [0.2, 1.0, 0.5], uKeyCol: [2.3, 2.4, 2.7], uKeySize: 0.3,
+      uRimA: [2.8, 2.9, 3.2], uRimB: [0.6, 2.6, 0.9],
+      uHaze: 0.07, uHazeCol: [0.07, 0.09, 0.08],
+      uRun: 0, uSag: 1, uCrateOn: 0, uPodY: 3.0, uHeld: 1,
+      uArmS: [0, 0.9, 0], uArmE: [0, 1.5, 0], uArmW: [0, 1, 0],
     },
     camera: loadsCamera(P),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
-      u.uCrateY.value = crateY(t);
-      u.uRun.value = run(t);
-      u.uCamelY.value = camelY(t);
-      u.uCamelX.value = -0.9 - 1.8 * Math.max(0, t - camelLand);
-      u.uStrapUp.value = Math.max(0, t - tLoads - 0.35) ** 2 * 6;
-      setV(u, 'uGlove', glovePos(P, t));
-      // the sodium lamp above the belt
-      setV(u, 'uP1', [0.2, 2.4, 0.9]);
-      setV(u, 'uP1c', [14, 7.5, 2.2]);
-      setV(u, 'uP2', [CUP_AT[0] - 0.4, 1.6, CUP_AT[2] + 0.8]);
-      setV(u, 'uP2c', [2.5, 2.7, 3.0]);
+      // the belt stops dead on the drop, then creeps on
+      u.uRun.value = t < tLoads ? run(t) : run(tLoads) + 0.25 * Math.max(0, t - tLoads - 0.5);
+      const W = wrist(t);
+      setV(u, 'uArmS', SH);
+      setV(u, 'uArmE', elbow(SH, [W[0], W[1] + 0.14, W[2]], 0.85, 0.8));
+      setV(u, 'uArmW', W);
+      u.uHeld.value = t < tLoads ? 1 : 0;
+      u.uCrateOn.value = t < tLoads ? 0 : 1;
+      // the figure sags under it, a spring down that settles lower
+      u.uSag.value = 1 - 0.07 * (t < tLoads ? 0 : spring(t, tLoads, 0.5, 0.3));
+      u.uPodY.value = 3.0 + 0.25 * ease.inOut3((t - tLift) / 1.2);
+      setV(u, 'uP1', [0.4, 3.6, -0.5]);
+      setV(u, 'uP1c', [6.0, 6.4, 7.2]);
+      setV(u, 'uP2', [TARGET_X, 1.2, 0.8]);
+      setV(u, 'uP2c', [0.8, 3.2, 1.2]);
     },
-    post(t) { return grade(t, { exposure: 1.05, bloom: 0.06 }); },
+    post(t) { return grade(t, { exposure: 1.05, bloom: 0.07 }); },
   };
 };

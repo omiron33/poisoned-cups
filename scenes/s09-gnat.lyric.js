@@ -1,70 +1,50 @@
 // The words of s09-gnat.
-// "You strain a gnat": a deadpan inspection readout. A thin HUD box is pinned to the bug in the
-// mesh; "You strain a" sits small top left, and GNAT locks on beside the bug itself.
-// "Let the camel through": set along the bottom; CAMEL rides down with the falling camel (pinned to
-// its side) and drops into its place in the line as the camel lands on "through" (glitched in).
-import { linesFrom, flow, lockOn, strike, glitch, measure, note, outFade, keyOf, clamp01, project, ease, carry } from '/song/lib/type.js';
+// "You strain a gnat": micro-small and forensic. The camera holds the drone dead centre, so a thin
+// inspection box is drawn round it there, and the line types out beside it as a terminal readout;
+// GNAT is locked on as the specimen, with a weight and a verdict in mono under it.
+// "Let the camel through": huge and shameless. LET THE sits top left; CAMEL strikes in from far
+// larger than the frame (it clips the edges for a few frames) and lands across the width;
+// THROUGH passes in with a trailing signal echo under it.
+import { linesFrom, term, lockOn, strike, ghost, arm, note, outFade, clamp01, ease, carry } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
-import { gnatCamera } from '/song/scenes/s09-gnat.js';
 
 const [L1, L2] = linesFrom('You strain a gnat', 'Let the camel through');
-const MH = 1.25;
 
-export default (P) => {
-  let cam = null;
-  const camAt = gnatCamera(P);
-  const tCam = L2.words.find((w) => /camel/i.test(w.w)).start;
-  const tThr = L2.words.find((w) => /through/i.test(w.w)).start;
-  const drop = 2.6, g = (2 * drop) / Math.pow(tThr - tCam, 2);
-  const camelY = (t) => 0.25 + Math.max(0, drop - 0.5 * g * Math.max(0, t - tCam) ** 2);
-  return {
-    textSize: [3840, 2160],
-    shade: 0.7,
-    textPlane(t, c) { cam = c; return cameraPlane(c, { width: 1, dist: 1, aspect: 16 / 9 }); },
-    drawText(ctx, t) {
-      carry(ctx, t, P);
-      cam = camAt(t);
-      const tLet = L2.words[0].start;
-      const f1 = outFade(t, tLet - 0.3, tLet - 0.05);
-      const gnatW = L1.words.find((w) => /gnat/i.test(w.w));
-      if (f1 > 0.002) {
-        flow(ctx, L1.words.filter((w) => w !== gnatW), t, { x: 240, y: 420, px: 150, alpha: f1 });
-        note(ctx, 'FILTER 09  ·  MESH 0.016  ·  MATT 23:24', 240, 560, { rule: 560, alpha: 0.8 * f1 });
-        if (cam) {
-          const b = project(cam, [0.004, MH + 0.008, 0]);
-          // the inspection box round the bug
-          const k = ease.out3((t - P.from) / 0.5);
-          const r = 150 + 240 * (1 - k);
-          ctx.strokeStyle = `rgba(0, 255, 170, ${(0.8 * f1).toFixed(3)})`; ctx.lineWidth = 3;
-          ctx.strokeRect(b.x - r, b.y - r * 0.7, r * 2, r * 1.4);
-          ctx.fillStyle = `rgba(0, 255, 170, ${(0.85 * f1).toFixed(3)})`;
-          ctx.font = '800 34px "JetBrains Mono"';
-          ctx.fillText('0.0031 G  ·  FLAGGED', b.x - r, b.y + r * 0.7 + 48);
-          ctx.fillRect(b.x + r, b.y, 120, 3);
-          lockOn(ctx, gnatW, t, b.x + r + 190, b.y + 70, 190, { alpha: f1, tag: 'BUG 0x01' });
-        }
+export default (P) => ({
+  textSize: [3840, 2160],
+  shade: 0.95,
+  textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
+  drawText(ctx, t) {
+    carry(ctx, t, P, { x: 240, y: 1960 });
+    const tLet = L2.words[0].start;
+    const f1 = outFade(t, tLet - 0.3, tLet - 0.05);
+    if (f1 > 0.002) {
+      // the inspection box round the drone at the frame's centre
+      const k = ease.out3((t - P.from) / 0.45);
+      const r = 170 + 260 * (1 - k);
+      ctx.strokeStyle = `rgba(255, 92, 170, ${(0.85 * f1).toFixed(3)})`; ctx.lineWidth = 3;
+      const L = 60;
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const cx = 1920 + sx * r, cy = 1080 + sy * r * 0.72;
+        ctx.moveTo(cx - sx * L, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sy * L);
       }
-      // line 2 along the bottom
-      const fade = outFade(t, P.to - 0.2, P.to);
-      const px = 250, y = 1880;
-      let x = 240;
-      for (const w of L2.words) {
-        const adv = measure(ctx, w.w, px);
-        const k = keyOf(w.w);
-        if (k === 'camel') {
-          let yy = y;
-          if (cam && t < tThr) {
-            const pj = project(cam, [0.75, camelY(t) + 0.95, 0.0]);
-            yy = Math.max(400, Math.min(y, pj.y));
-          }
-          if (t >= w.start && yy > -px) strike(ctx, w, t, x, yy, px * 1.25, { alpha: fade, flash: false });
-          x += measure(ctx, w.w, px * 1.25);
-          continue;
-        }
-        if (k === 'through') glitch(ctx, w, t, x, y, px, { alpha: fade });
-        else flow(ctx, [w], t, { x, y, px, alpha: fade });
-        x += adv;
-      }
-    },
-  };
-};
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 92, 170, ${(0.85 * f1).toFixed(3)})`;
+      ctx.fillRect(1920 + r, 1080, 190, 3);
+      // the readout: tiny, typed
+      const words = L1.words.slice(0, -1), gnat = L1.words[L1.words.length - 1];
+      arm(ctx, words, t, term, { x: 2330, y: 960, px: 136, maxW: 1400, alpha: f1 });   // big enough to hold against the mesh
+      lockOn(ctx, gnat, t, 2330, 1260, 160, { alpha: f1, tag: 'SPECIMEN 0x01', hud: '255, 92, 170', flash: false });
+      if (t > gnat.start) note(ctx, 'MASS 0.0031 G  ·  LANE A  ·  REJECTED', 2330, 1420, { px: 36, color: '255, 150, 200', alpha: 0.9 * f1 });
+      note(ctx, 'FILTER 09  ·  PITCH 0.0045', 240, 250, { px: 38, rule: 420, alpha: 0.8 * f1 });
+    }
+    // line 2: huge
+    const fade = outFade(t, P.to - 0.2, P.to);
+    const [wLet, wThe, wCamel, wThr] = L2.words;
+    arm(ctx, [wLet, wThe], t, strike, { x: 240, y: 470, px: 190, alpha: fade, flash: false, shake: 0.4 });
+    strike(ctx, wCamel, t, 240, 1340, 660, { alpha: fade, from: 1.4, rot: 0.04, flash: false, shake: 0.5 });
+    if (wThr) ghost(ctx, wThr, t, 250, 1840, 280, { alpha: fade, dir: -1 });
+    if (t > wCamel.start) note(ctx, 'LANE B  ·  CARGO 40 FT  ·  38,000 KG  ·  CLEARED  ·  MATT 23:24', 3600, 1990, { px: 38, align: 'right', color: '150, 255, 110', alpha: 0.9 * fade });
+  },
+});

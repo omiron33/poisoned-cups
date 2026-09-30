@@ -1,38 +1,44 @@
-// The words of s23-reed: tender. "A cracked reed bruised" steps down the left in mercy's italic,
-// one word to a row like a stalk bending; then "I" is set huge in gold blackletter on the right,
-// with "will never crush or kill" quietly beside it. No weapons here.
-import { linesFrom, flow, paint, arrive, measure, note, outFade, spring, clamp01, carry } from '/song/lib/type.js';
+// The words of s23-reed: tender, no weapons. "A cracked reed bruised" is whispered in mercy's
+// lavender italic, stepping down the upper left like a stalk bending over, each word breathing in
+// softly. "I will never crush or kill" is set steady along the bottom right: "I" in the divine
+// gold-white, the rest in the same calm italic (crush and kill are not allowed to hit here).
+import { linesFrom, paint, measure, arrive, outFade, clamp01, note, VOICES } from '/song/lib/type.js';
+import { fullFrame } from '/song/lib/x-f.js';
+import { lyrics } from '/song/lib/look.js';
 
 const [L1, L2] = linesFrom('A cracked reed', 'I will never crush');
-const fullFrame = (cam) => {
-  const sub = (a, b) => a.map((v, i) => v - b[i]), nrm = (a) => { const l = Math.hypot(...a); return a.map((v) => v / l); };
-  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-  const ww = nrm(sub(cam.target, cam.pos)), r = cam.roll ?? 0;
-  const uu = nrm(cross(ww, [Math.sin(r), Math.cos(r), 0])), vv = cross(uu, ww);
-  const hh = Math.tan((cam.fov * Math.PI) / 360), hw = hh * 16 / 9;
-  return { c: cam.pos.map((v, i) => v + ww[i]), ax: uu, ay: vv, hs: [hw, hh] };
-};
+// a soft word: fades up over 0.1 s with a small settle, then holds
+const soft = (ctx, w, t, x, y, px, o) => { const k = Math.min(1, Math.max(0, (t - w.start + 0.02) / 0.08)); if (k <= 0) return measure(ctx, w.w, px, o); return paint(ctx, w.w, x, y + (1 - k) * (1 - k) * px * 0.1, px, { ...o, alpha: k * (o.alpha ?? 1) }); };
 
 export default (P) => ({
   textSize: [3840, 2160],
   shade: 0.4,
   textPlane(t, cam) { return fullFrame(cam); },
   drawText(ctx, t) {
-    // "tire" (s22) is sung across the cut: held low left, above the LOT note
-    carry(ctx, t, P, { y: 1850 });
-    const a = outFade(t, P.to - 0.3, P.to);
-    // the stepped column: "A cracked" / "reed" / "bruised"
-    const rows = [[L1.words[0], L1.words[1]], [L1.words[2]], [L1.words[3]]];
-    rows.forEach((row, r) => flow(ctx, row, t, { x: 260 + r * 110, y: 560 + r * 330, px: 220, ground: 'dark', alpha: a, rise: 0.3 }));
-    // "I", huge and gold, settling on its onset
-    const I = L2.words[0];
-    if (t >= I.start) {
-      const s = spring(t, I.start, 0.8, 0.15);
-      ctx.save(); ctx.translate(2750, 1320); const sc = 0.92 + 0.08 * s; ctx.scale(sc, sc);
-      paint(ctx, I.w, -120, 0, 620, { ground: 'dark', alpha: clamp01(s * 1.3) * a });
-      ctx.restore();
+    // carry(ctx, t, P), laid out exactly where s22 set "fall and tire" (same size and place, so the
+    // words do not jump at the cut), then gone 0.45 s after "tire" ends
+    if (t < P.from + 0.8) {
+      const ws = lyrics.words.filter((w) => w.start < P.from + 0.02 && w.end > P.from - 1.2 && /^(fall|and|tire)$/i.test(w.w.replace(/[^a-z]/gi, '')));
+      const ca = ws.length ? 1 - clamp01((t - (ws[ws.length - 1].end + 0.45)) / 0.2) : 0;
+      let fx = 290;
+      if (ca > 0.002) for (const w of ws) fx += paint(ctx, w.w, fx, 1800, 250, { alpha: ca }) + 250 * 0.12;
     }
-    flow(ctx, L2.words.slice(1), t, { x: 2380, y: 1680, px: 160, maxW: 1260, ground: 'dark', alpha: a });
-    note(ctx, 'LOT 23  ·  REED  ·  WICK  ·  NOT FOR SALE  ·  ISA 42:3  ·  MATT 12:20', 260, 1990, { px: 38, ground: 'dark', rule: 700, alpha: 0.8 * a });
+    const a = outFade(t, P.to - 0.02, P.to + 0.1);
+    const mercy = { voice: VOICES.mercy, ground: 'dark', alpha: a };
+    // the bending stalk: "a cracked" / "reed" / "bruised"
+    const rows = [[L1.words[0], L1.words[1]], [L1.words[2]], [L1.words[3]]];
+    rows.forEach((row, r) => {
+      let x = 300 + r * 150 + r * r * 40;
+      for (const w of row) x += soft(ctx, w, t, x, 470 + r * 250, 190, mercy) + 190 * 0.12;
+    });
+    // "I will never crush or kill", steady along the bottom right
+    const pxI = 215, px = 170;   // "I" near the line's size so it reads as a word, not a stroke
+    const I = L2.words[0], rest = L2.words.slice(1);
+    const wI = measure(ctx, I.w, pxI, { ground: 'dark' });
+    const wr = rest.reduce((s, w) => s + measure(ctx, w.w, px, mercy), 0) - px * 0.26;
+    let x = 3590 - (wI + px * 0.1 + wr);
+    x += soft(ctx, I, t, x, 1860, pxI, { ground: 'dark', alpha: a });
+    for (const w of rest) x += soft(ctx, w, t, x, 1860, px, mercy);
+    note(ctx, 'LOT 23  ·  SIGNAL FILAMENT  ·  STILL LIVE  ·  ISA 42:3', 250, 2010, { px: 34, ground: 'dark', alpha: 0.7 * a * (t > P.from + 0.9 ? 1 : 0) });
   },
 });

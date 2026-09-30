@@ -1,198 +1,154 @@
 // 12 · "You sell the gate / Then you guard the gate"
-// Opens as the widow's two copper coins roll in and topple flat under the gate's threshold.
-// A gilt paywall gate between two steel posts in a wet concrete hall, the paid side behind it lit
-// sodium orange. Its leaves stand open like a product shot, a price tag hanging from a rail (its price: the widow's two copper coins), a red
-// laser grid strung across the opening. Turn: on "guard" the leaves slam shut and the lock
-// bolts shoot across, on the last "gate" the laser grid flares and the gilt heats red (s13 takes that heat as fire).
-import { keys, ease, grade, rgb, orbit, linesFrom, spring } from '/song/lib/look.js';
+// v2. A neon corridor of wet concrete, purple and green tubes down both walls, ending in a sleek
+// access portal: a chrome frame in a black wall, two panels of black smoked glass edged in green
+// light. A biometric scan line sweeps the opening; on "gate" the panels slide apart for premium
+// clearance and cold white light floods out of the paid side. On "guard" they slam shut, the edge
+// light turns magenta and a lattice of red laser geometry snaps across the opening; on the last
+// "gate" the lattice flares and holds hot (s13 takes that heat as fire). The storefront, the price
+// tiers and the ACCESS DENIED lock are set in the lyric layer.
+import { ease, grade, rgb, orbit, linesFrom, spring, clamp } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
+import { E_GLSL } from '/song/lib/x-e.js';
 
 const [L1, L2] = linesFrom('You sell the gate', 'Then you guard the gate');
-const tGuard = L2.words.find((w) => /guard/i.test(w.w)).start;
-const tThen = tGuard;   // the slam lands on "guard"
-const tGate2 = L2.words[L2.words.length - 1].start;
+export const W12 = {
+  sell: L1.words[1].start, gate1: L1.words[3].start, then: L2.words[0].start,
+  guard: L2.words[2].start, gate2: L2.words[4].start,
+};
 
 export default (P) => {
   const t0 = P.from;
-  // the slam: leaves swing from open to shut, arriving on "Then"
-  const swing = (t) => {
-    const a0 = 1.25, dur = 0.32;
-    const x = (t - (tThen - dur)) / dur;
-    if (x <= 0) return a0 + 0.03 * Math.sin((t - t0) * 1.3);
-    if (x < 1) return a0 * (1 - x * x);
-    // a hard rebound off the stop, damped
-    const u = t - tThen;
-    return 0.06 * Math.exp(-u * 9) * Math.abs(Math.sin(u * 22));
-  };
   const camera = (t) => {
     const u = t - t0;
-    const k = ease.inOut3((t - (tThen - 0.15)) / 0.9);
-    const kick = Math.exp(-Math.max(0, t - tThen) * 12) * (t > tThen ? 1 : 0);
-    const c = orbit(t, {
-      target: [0.0, 1.05 + 0.05 * k, 0],
-      yaw: -0.22 + 0.025 * u + 0.12 * k,
-      pitch: 0.06 + 0.05 * k,
-      dist: 5.0 - 0.1 * u - 1.4 * k,
-      fov: 36, drift: 0.006,
-    });
-    c.pos[1] += 0.02 * kick * Math.sin(t * 90);   // the slam shakes the camera
+    const snap = t > W12.guard ? spring(t, W12.guard, 0.4, 0.3) : 0;
+    const shake = t > W12.guard ? Math.exp(-(t - W12.guard) * 10) * Math.sin((t - W12.guard) * 80) * 0.012 : 0;
+    const c = orbit(t, { target: [0, 1.25, 0], yaw: 0.04 - 0.008 * u, pitch: 0.03 + shake, dist: 6.2 - 0.22 * u - 0.9 * snap, fov: 36 - 3 * snap, drift: 0.004 });
     return c;
   };
   return {
     name: 's12-gate', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + /* glsl */ `
-uniform float uSwing, uBolt, uTag, uLaser, uHeat;
-uniform vec4 uR1, uR2;   // rolling coins: x, z, roll angle, topple angle
-float rollCoin(vec3 p, vec4 c, float seed) {
-  vec3 q = p - vec3(c.x, 0.0, c.y);
-  if (dot(q.xz, q.xz) > 0.04 || p.y > 0.15) return max(length(q.xz) - 0.08, p.y - 0.12);
-  // topple: the coin falls onto its side about the contact line (along z)
-  float r = 0.05;
-  q.y -= r * cos(c.w) + 0.0055 * sin(c.w);
-  q.xy = rot(-c.w) * q.xy;
-  q.yz = rot(c.z) * q.yz;
-  return sdCoin(q.yxz, r, 0.0055, seed);
-}
-// a point in a leaf's own frame: x from 0 at the hinge to 0.9 at the meeting stile, swung by uSwing
-vec3 leafLocal(vec3 p, float side) {
-  vec3 q = p - vec3(side * 0.92, 0, 0);
-  q.x *= -side;
-  q.xz = rot(-uSwing) * q.xz;
-  return q;
-}
-float leafD(vec3 q, out int id) {
-  id = 1;
-  if (q.x < -0.1 || q.x > 1.02 || q.y > 2.25 || abs(q.z) > 0.15) return max(max(-0.1 - q.x, q.x - 1.02), max(q.y - 2.25, abs(q.z) - 0.15)) + 0.02;
-  // bars with spear finials
-  float bx = clamp(floor(q.x / 0.11 + 0.5), 1.0, 7.0) * 0.11;
-  float d = max(length(q.xz - vec2(bx, 0.0)) - 0.012, abs(q.y - 1.06) - 0.94);
-  d = min(d, sdRoundCone(q - vec3(bx, 2.0, 0), vec3(0), vec3(0, 0.13, 0), 0.028, 0.003));
-  // stiles and rails
-  d = min(d, sdBox(q - vec3(0.02, 1.06, 0), vec3(0.02, 1.0, 0.022)));
-  d = min(d, sdBox(q - vec3(0.88, 1.06, 0), vec3(0.02, 1.0, 0.022)));
-  d = min(d, sdBox(q - vec3(0.45, 0.12, 0), vec3(0.45, 0.02, 0.022)));
-  d = min(d, sdBox(q - vec3(0.45, 0.55, 0), vec3(0.45, 0.016, 0.02)));
-  d = min(d, sdBox(q - vec3(0.45, 1.62, 0), vec3(0.45, 0.016, 0.02)));
-  d = min(d, sdBox(q - vec3(0.45, 2.0, 0), vec3(0.45, 0.02, 0.022)));
-  // a ring in each top bay
-  float cx = clamp(floor(q.x / 0.11) + 0.5, 0.5, 7.5) * 0.11;
-  d = min(d, sdTorus((q - vec3(cx, 1.81, 0)).xzy, vec2(0.043, 0.007)));
-  return d;
-}
+    frag: STUDIO_GLSL + E_GLSL + /* glsl */ `
+uniform float uOpen, uScanY, uScan, uLaser, uHeat, uLock;
+const float HW = 0.72, HH = 2.3;   // the opening's half width and height
 float mapObj(vec3 p, out int id) {
   id = 1;
-  if (abs(p.x) > 1.5 || p.y > 2.6 || abs(p.z) > 1.3) return max(max(abs(p.x) - 1.45, p.y - 2.55), abs(p.z) - 1.25);
-  int li;
-  vec3 qa = leafLocal(p, -1.0), qb = leafLocal(p, 1.0);
-  float d = min(leafD(qa, li), leafD(qb, li));
-  // posts: dark steel with gilt caps
-  vec3 pp = vec3(abs(p.x) - 1.04, p.y, p.z);
-  float post = sdRoundBox(pp - vec3(0, 1.15, 0), vec3(0.09, 1.15, 0.09), 0.01);
-  if (post < d) { d = post; id = 2; }
-  float cap = min(sdRoundBox(pp - vec3(0, 2.33, 0), vec3(0.12, 0.03, 0.12), 0.01), sdSphere(pp - vec3(0, 2.44, 0), 0.075));
-  if (cap < d) { d = cap; id = 1; }
-  // the lock box on the right leaf's meeting stile, and its two bolts
-  float lk = sdRoundBox(qb - vec3(0.84, 1.12, 0.055), vec3(0.07, 0.12, 0.035), 0.008);
-  if (lk < d) { d = lk; id = 3; }
-  float bolt = min(sdCapsule(qb, vec3(0.84, 1.06, 0.055), vec3(0.86 + uBolt, 1.06, 0.055), 0.017),
-                   sdCapsule(qb, vec3(0.84, 1.18, 0.055), vec3(0.86 + uBolt, 1.18, 0.055), 0.017));
-  if (bolt < d) { d = bolt; id = 4; }
-  float rc = min(rollCoin(p, uR1, 1.0), rollCoin(p, uR2, 2.0));
-  if (rc < d) { d = rc; id = 6; }
-  // the price tag, hanging on a thread from the left leaf's middle rail, swinging
-  vec3 tq = qa - vec3(0.62, 0.55, 0.035);
-  tq.xy = rot(uTag) * tq.xy;
-  float thread = sdCapsule(tq, vec3(0), vec3(0, -0.12, 0), 0.0015);
-  float tag = sdRoundBox(tq - vec3(0, -0.2, 0), vec3(0.07, 0.085, 0.002), 0.004);
-  tag = max(tag, -sdCyl((tq - vec3(0, -0.135, 0)).xzy, 0.008, 0.01));
-  if (min(tag, thread) < d) { d = min(tag, thread); id = 5; }
+  // corridor walls and ceiling (we are inside it)
+  float d = min(1.8 - abs(p.x), 3.2 - p.y);
+  // the black portal wall with its opening
+  float wall = max(abs(p.z) - 0.12, -sdBox(p - vec3(0, HH * 0.5, 0), vec3(HW, HH * 0.5, 0.3)));
+  wall = max(wall, abs(p.x) - 1.8);
+  if (wall < d) { d = wall; id = 2; }
+  // the chrome frame round the opening
+  float fr = max(sdBox(p - vec3(0, HH * 0.5 + 0.04, 0.14), vec3(HW + 0.07, HH * 0.5 + 0.08, 0.03)), -sdBox(p - vec3(0, HH * 0.5, 0), vec3(HW, HH * 0.5, 0.5)));
+  if (fr < d) { d = fr; id = 3; }
+  // the two smoked glass panels, sliding apart into the wall
+  float slide = uOpen * (HW + 0.05);
+  float pa = sdRoundBox(p - vec3(-HW * 0.5 - slide, HH * 0.5, 0.0), vec3(HW * 0.5 - 0.005, HH * 0.5 - 0.005, 0.025), 0.01);
+  float pb = sdRoundBox(p - vec3(HW * 0.5 + slide, HH * 0.5, 0.0), vec3(HW * 0.5 - 0.005, HH * 0.5 - 0.005, 0.025), 0.01);
+  float pn = max(min(pa, pb), abs(p.x) - HW);
+  if (pn < d) { d = pn; id = 4; }
+  // tubes down both walls: vertical, every 1.4 m, purple and green
+  vec3 tq = vec3(abs(p.x) - 1.74, p.y, p.z);
+  float k = clamp(floor(p.z / 1.4 + 0.5), 1.0, 6.0);
+  float tube = tubeLight(tq - vec3(0, 0, k * 1.4), vec3(0, 0.25, 0), vec3(0, 2.9, 0));
+  if (tube < d) { d = tube; id = mod(k + step(0.0, p.x), 2.0) < 0.5 ? 5 : 6; }
+  // the paid side: a white room beyond
+  float room = p.z + 5.0;
+  if (room < d) { d = room; id = 7; }
   return d;
 }
 Mat material(int id, vec3 p, vec3 n) {
   if (id == 1) {
-    Mat m = GOLD(); m.rough = 0.14 + 0.12 * vnoise(p * 60.0); m = dirty(m, p, 0.35);
-    // the gilt heats red from the lasers, worst low down where the grid is thickest
-    float hn = 0.6 + 0.4 * vnoise(p * 9.0 + uTime * 0.5);
-    m.emit = vec3(1.0, 0.13, 0.02) * uHeat * uHeat * hn * 0.65 * smoothstep(0.2, 1.4, p.y) * smoothstep(2.3, 1.7, p.y);
+    Mat m = M(vec3(0.13, 0.13, 0.14) * (0.7 + 0.5 * fbm(p * 2.5, 4)), 0.6, 0.0);
+    if (p.z < 0.0) { m.alb = vec3(0.8); m.emit = vec3(1.6, 1.7, 1.9) * 0.8; return m; }
+    m = dirty(m, p, 0.8);
+    // spill from the nearest tubes on the walls and ceiling
+    float k = clamp(floor(p.z / 1.4 + 0.5), 1.0, 6.0);
+    float dz = p.z - k * 1.4, dx = 1.74 - abs(p.x);
+    float sp = exp(-(dz * dz) / 0.25) * exp(-max(dx, 0.0) * 1.2) * smoothstep(3.2, 1.5, p.y);
+    vec3 tc = mod(k + step(0.0, p.x), 2.0) < 0.5 ? vec3(1.6, 0.35, 2.6) : vec3(0.45, 2.6, 0.6);
+    m.emit = m.alb * tc * sp * 1.6;
     return m;
   }
-  if (id == 2) { Mat m = M(vec3(0.6, 0.6, 0.62), 0.42, 1.0); return dirty(m, p, 0.6); }
-  if (id == 3) { Mat m = BRASS(); return dirty(m, p, 0.3); }
-  if (id == 4) return CHROME();
-  if (id == 6) {
-    float v = smoothstep(0.55, 0.8, fbm(p * 160.0, 3));
-    return M(mix(vec3(0.86, 0.46, 0.3), vec3(0.3, 0.5, 0.38), v * 0.7), 0.3 + 0.3 * v, 1.0 - 0.8 * v);
+  if (id == 2) { Mat m = M(vec3(0.02, 0.02, 0.025), 0.25, 0.0); m.clear = 1.0; return dirty(m, p, 0.5); }
+  if (id == 3) { Mat m = CHROME(); m.rough = 0.08 + 0.1 * vnoise(p * 40.0); return m; }
+  if (id == 4) {
+    Mat m = M(vec3(0.015, 0.015, 0.02), 0.03, 0.0); m.clear = 1.0;
+    // the panels' edges glow: green while for sale, magenta once locked
+    float lx = abs(p.x) - (HW * 0.5 + uOpen * (HW + 0.05));
+    float e = smoothstep(0.02, 0.0, abs(abs(lx) - HW * 0.5 + 0.03)) + smoothstep(0.02, 0.0, abs(abs(p.y - HH * 0.5) - HH * 0.5 + 0.04));
+    vec3 c = mix(vec3(0.3, 2.2, 0.4), vec3(3.0, 0.2, 1.4), uLock);
+    m.emit = c * e * 1.2;
+    // a status slit across the middle: a biometric reader line
+    m.emit += c * 0.6 * smoothstep(0.006, 0.0, abs(p.y - 1.35)) * step(abs(lx), HW * 0.4);
+    return m;
   }
-  // the tag: a bone card with a red price rule, and on it the price: the widow's two copper coins
-  vec3 q = leafLocal(p, -1.0) - vec3(0.62, 0.55, 0.035);
-  q.xy = rot(uTag) * q.xy;
-  float red = step(abs(q.y + 0.165), 0.008) * step(abs(q.x), 0.05);
-  vec2 c1 = q.xy - vec2(-0.027, -0.225), c2 = q.xy - vec2(0.027, -0.225);
-  float coin = max(step(length(c1), 0.024), step(length(c2), 0.024));
-  Mat m = M(vec3(0.85, 0.8, 0.7), 0.6, 0.0);
-  m.alb = mix(m.alb, vec3(0.5, 0.02, 0.03), red);
-  if (coin > 0.5 && id == 5 && abs(q.z) > 0.001) {
-    float v = smoothstep(0.55, 0.8, fbm(p * 160.0, 3));
-    m = M(mix(vec3(0.86, 0.46, 0.3), vec3(0.3, 0.5, 0.38), v * 0.7), 0.3 + 0.3 * v, 1.0 - 0.8 * v);
-  }
-  return m;
+  if (id == 5) { Mat m = M(vec3(0.9), 0.3, 0.0); m.emit = vec3(1.6, 0.35, 2.6) * 2.2; return m; }
+  if (id == 6) { Mat m = M(vec3(0.9), 0.3, 0.0); m.emit = vec3(0.45, 2.6, 0.6) * 1.8; return m; }
+  Mat m = M(vec3(0.9), 0.5, 0.0); m.emit = vec3(2.2, 2.3, 2.5) * 1.2; return m;
 }
-// the laser grid: a plane of red beams just in front of the opening
-vec3 lasers(vec3 ro, vec3 rd, float depth) {
+// light drawn in the opening's plane: the scan line, then the laser lattice
+vec3 portalLight(vec3 ro, vec3 rd, float depth) {
   if (abs(rd.z) < 1e-4) return vec3(0);
-  float tz = (0.24 - ro.z) / rd.z;
+  float tz = (0.3 - ro.z) / rd.z;
   if (tz < 0.0 || tz > depth) return vec3(0);
   vec3 q = ro + rd * tz;
-  if (abs(q.x) > 0.95 || q.y < 0.08 || q.y > 2.05) return vec3(0);
-  float gy = abs(fract(q.y / 0.19) - 0.5) * 0.19;
-  float gx = abs(fract((q.x + 0.95) / 0.38) - 0.5) * 0.38;
-  float w = 0.0022 * tz;
-  float line = exp(-gy * gy / (w * w)) + exp(-gx * gx / (w * w)) * 0.7;
-  float halo = exp(-gy / (w * 6.0)) * 0.15;
-  return mix(vec3(1.0, 0.05, 0.03), vec3(1.0, 0.28, 0.05), uHeat) * (line * (0.9 - 0.35 * uHeat) + halo * (1.0 + 1.2 * uHeat)) * uLaser;
+  if (abs(q.x) > HW || q.y < 0.02 || q.y > HH) return vec3(0);
+  float w = 0.0018 * tz;
+  vec3 c = vec3(0);
+  float sy = q.y - uScanY;
+  c += vec3(0.3, 2.0, 0.4) * (exp(-sy * sy / (w * w)) * 1.4 + exp(-abs(sy) / 0.12) * 0.12 * step(0.0, sy)) * uScan;
+  // the lattice: two families of diagonals and a few horizontals
+  vec2 g = vec2(q.x + q.y, q.x - q.y) * 0.7071;
+  float s = 0.26;
+  float ga = abs(fract(g.x / s) - 0.5) * s, gb = abs(fract(g.y / s) - 0.5) * s;
+  float gh = abs(fract(q.y / 0.46) - 0.5) * 0.46;
+  float line = exp(-ga * ga / (w * w)) + exp(-gb * gb / (w * w)) + 0.6 * exp(-gh * gh / (w * w));
+  float halo = (exp(-ga / (w * 6.0)) + exp(-gb / (w * 6.0))) * 0.08;
+  c += mix(vec3(1.0, 0.04, 0.12), vec3(1.0, 0.25, 0.3), uHeat) * (line + halo * (1.0 + 2.0 * uHeat)) * uLaser;
+  return c;
 }
 vec3 shade(vec2 fc) {
   vec3 ro; vec3 rd = camRay(fc, ro);
   float depth;
   vec3 c = studio(ro, rd, depth);
-  return c + lasers(ro, rd, depth) * uExpo;
+  return c + portalLight(ro, rd, depth) * uExpo;
 }`,
     uniforms: {
       ...STUDIO_UNIFORMS,
-      uCycA: rgb('170, 104, 48', 1.3), uCycB: rgb('56, 46, 42', 1.0),
-      uFloorCol: rgb('70, 70, 66', 0.9), uFloorRough: 0.06, uFloorGrain: 1.6,
-      uKeyDir: [0.25, 0.85, 0.45], uKeyCol: [3.4, 3.8, 4.0], uKeySize: 0.25,
-      uRimA: [2.8, 1.1, 0.25], uRimB: [1.6, 1.8, 2.0],
-      uP1: [0, 1.6, -1.4], uP1c: [3.2, 1.4, 0.4],
-      uP2: [0, 1.0, 0.6], uP2c: [1.4, 0.05, 0.03],
-      uGrime: 0.9, uHaze: 0.06, uHazeCol: [0.12, 0.07, 0.035],
-      uSwing: 1.25, uBolt: 0, uTag: 0, uLaser: 1, uHeat: 0, uR1: [0, 5, 0, 0], uR2: [0, 5, 0, 0],
+      uCycA: rgb('40, 26, 60', 1.0), uCycB: rgb('14, 10, 22', 1.0),
+      uFloorCol: rgb('60, 60, 66', 0.8), uFloorRough: 0.06, uFloorGrain: 1.6, uGrime: 0.55, uFogFar: 60,
+      uKeyDir: [0.1, 0.9, 0.5], uKeyCol: [1.2, 1.2, 1.4], uKeySize: 0.4,
+      uRimA: [1.6, 0.4, 2.4], uRimB: [0.4, 2.0, 0.6],
+      uP1: [0, 1.6, -1.2], uP1c: [0, 0, 0],
+      uP2: [0, 1.2, 0.8], uP2c: [0, 0, 0],
+      uHaze: 0.06, uHazeCol: rgb('50, 36, 80', 0.35),
+      uOpen: 0, uScanY: 3, uScan: 0, uLaser: 0, uHeat: 0, uLock: 0,
     },
     camera,
     textPlane() { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
-      u.uSwing.value = swing(t);
-      // two coins roll in from the camera side, slow to a stop under the threshold and topple flat
-      const roll = (x0, z1, delay, dir) => {
-        const x = Math.max(0, t - t0 - delay), T = 1.1;
-        const k = Math.min(1, x / T), z = z1 + 1.6 * (1 - k) * (1 - k);
-        const dist = 1.6 * (1 - (1 - k) * (1 - k));
-        const top = x < T ? 0 : Math.min(Math.PI / 2, ((x - T) / 0.28) ** 2 * (Math.PI / 2));
-        const wob = x > T + 0.28 ? 0.06 * Math.exp(-(x - T - 0.28) * 10) * Math.sin((x - T) * 40) : 0;
-        return [x0, z, -dist / 0.05, dir * (top - wob)];
-      };
-      u.uR1.value = roll(-0.1, 0.32, 0.0, 1);
-      u.uR2.value = roll(0.13, 0.38, 0.15, -1);
-      u.uBolt.value = 0.2 * spring(t, tGuard + 0.16, 0.18, 0.15);
-      // the tag swings gently, then kicks when the gate slams
-      const kick = t > tThen ? 0.35 * Math.exp(-(t - tThen) * 2.5) * Math.sin((t - tThen) * 9) : 0;
-      u.uTag.value = 0.08 * Math.sin((t - t0) * 2.2) + kick;
-      // the grid hums; flares hard on the last "gate" and holds hot
-      const flare = t > tGate2 ? 0.5 + 0.9 * Math.exp(-(t - tGate2) * 4) : 0;
-      u.uLaser.value = 0.85 + 0.1 * Math.sin(t * 47) + flare;
-      u.uHeat.value = ease.inOut3((t - tGate2) / Math.max(0.5, P.to - tGate2));
-      u.uP2c.value = [1.4 * u.uLaser.value, 0.05, 0.03];
+      // the scan sweeps down the opening on "sell" and again on "gate"
+      const sweep = (ts) => { const x = (t - ts) / 0.6; return x >= 0 && x <= 1 ? x : -1; };
+      const s1 = sweep(W12.sell - 0.1), s2 = sweep(W12.then);
+      const s = s1 >= 0 ? s1 : s2;
+      u.uScanY.value = s >= 0 ? 2.25 - 2.2 * ease.inOut3(s) : 3;
+      u.uScan.value = s >= 0 ? 1 : 0;
+      // open for premium clearance on "gate", slammed shut on "guard"
+      const open = ease.out3((t - W12.gate1) / 0.45);
+      const shut = t < W12.guard - 0.12 ? 0 : Math.min(1, ((t - W12.guard + 0.12) / 0.12) ** 2);
+      const bounce = t > W12.guard ? 0.05 * Math.exp(-(t - W12.guard) * 12) * Math.abs(Math.sin((t - W12.guard) * 30)) : 0;
+      u.uOpen.value = clamp(open * (1 - shut) + bounce, 0, 1);
+      u.uLock.value = t > W12.guard ? 1 : 0;
+      const flare = t > W12.gate2 ? 0.6 + 1.0 * Math.exp(-(t - W12.gate2) * 4) : 0;
+      u.uLaser.value = t > W12.guard ? 0.9 + 0.08 * Math.sin(t * 47) + flare : 0;
+      u.uHeat.value = ease.inOut3((t - W12.gate2) / Math.max(0.5, P.to - W12.gate2));
+      // light from the paid side while open; the red of the lattice after
+      const o = u.uOpen.value;
+      u.uP1c.value = [3.0 * o, 3.1 * o, 3.4 * o];
+      const L = u.uLaser.value;
+      u.uP2c.value = [1.6 * L, 0.05 * L, 0.2 * L];
     },
-    post(t) { return grade(t, { exposure: 1.05, vignette: 0.5 }); },
+    post(t) { return grade(t, { exposure: 1.05, vignette: 0.45, bloom: 0.09 }); },
   };
 };

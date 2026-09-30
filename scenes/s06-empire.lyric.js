@@ -1,64 +1,95 @@
 // The words of s06-empire.
-// "You twist the truth": set along a baseline that twists into a wave on "twist" (slashed in),
-// on the left while the fibre coils. "To build your little empire": each word lands like a slab
-// on a stack in the right column, bottom up, a dark rack plate with an LED under it; EMPIRE tops
-// the stack with a lock-on reticle.
-import { linesFrom, arrive, paint, measure, slash, lockOn, note, outFade, keyOf, spring, ease, clamp01, carry } from '/song/lib/type.js';
+// "You twist the truth": set lower left on a coiled baseline (every letter rides a fixed helix
+// wave and leans with it), each word arriving as misregistered colour plates that snap into
+// register; TWIST in acid green, TRUTH in the mercy italic, bent like the rest.
+// "To build your little empire": each word is a 1U rack plate (vents, LEDs, a unit number) slid
+// into a rack in the right column, bottom up, so the line stacks like the towers; EMPIRE tops
+// the rack as a taller plate in the polished claim voice.
+import { linesFrom, paint, measure, voiceOf, shown, note, outFade, keyOf, ease, clamp01, carry } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
 
 const [L1, L2] = linesFrom('You twist the truth', 'To build your little empire');
 
+// one word on the coil: letters on a fixed sine baseline (phase by x), leaning with the slope
+function coilWord(ctx, w, t, x0, y0, px, { amp, freq, alpha }) {
+  const v = voiceOf(w.w);
+  let s = shown(w.w); if (v.caps) s = s.toUpperCase();
+  const size = Math.round(px * v.scale);
+  ctx.font = v.font(size); ctx.letterSpacing = '0px';
+  const track = (v.track ?? 0) * size;
+  const u = t - w.start + 0.02;
+  const k = ease.out3(u / 0.09);
+  const d = (1 - k) * px * 0.2;
+  let x = x0;
+  for (const ch of s) {
+    const cw = ctx.measureText(ch).width;
+    const cx = x + cw / 2;
+    const y = y0 + Math.sin(cx * freq) * amp;
+    const ang = Math.atan(Math.cos(cx * freq) * amp * freq) * 0.8;
+    if (u > 0) {
+      ctx.save(); ctx.translate(cx, y); ctx.rotate(ang);
+      if (d > 0.5) {
+        ctx.fillStyle = `rgba(255, 60, 170, ${(0.7 * (1 - k) * alpha).toFixed(3)})`; ctx.fillText(ch, -cw / 2 - d, 0);
+        ctx.fillStyle = `rgba(80, 255, 140, ${(0.7 * (1 - k) * alpha).toFixed(3)})`; ctx.fillText(ch, -cw / 2 + d, 0);
+      }
+      ctx.fillStyle = `rgba(${v.color[0]}, ${(clamp01(k * 1.4) * alpha).toFixed(3)})`;
+      ctx.fillText(ch, -cw / 2, 0);
+      ctx.restore();
+    }
+    x += cw + track;
+  }
+  return x - x0 + px * 0.45;   // a wide word space: the leaning letters must not close it
+}
+
 export default (P) => ({
   textSize: [3840, 2160],
-  shade: 0.6,
+  shade: 0.85,
   textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
   drawText(ctx, t) {
-    carry(ctx, t, P, { x: 240, y: 420 });   // the bottom left holds the twisting line
+    carry(ctx, t, P, { x: 240, y: 420 });
     const b0 = L2.words[0].start;
-    // line 1: a twisting baseline on the left, on two rows (YOU TWIST / THE truth) so TRUTH stays
-    // clear of the bright coil, with an extra word space so the slashed word never touches its
-    // neighbours
-    const tw = L1.words.find((w) => /twist/i.test(w.w)).start;
+    // line 1: the coil, lower left on two rows (clear of the fibre at the centre)
     const f1 = outFade(t, b0 - 0.35, b0 - 0.05);
     if (f1 > 0.002) {
-      const px = 190;
-      const amp = 45 * ease.out3((t - tw) / 0.6);
-      let x = 260, row = 0;
+      const px = 210;
+      let x = 250, row = 0;
       L1.words.forEach((w, i) => {
-        if (i === 2) { x = 260; row = 1; }
-        const adv = measure(ctx, w.w, px);
-        const y = 1470 + row * 300 + Math.sin(i * 1.7 + (t - tw) * 2.2) * amp;
-        if (/twist/i.test(w.w)) slash(ctx, w, t, x, y, px, { alpha: f1 });
-        else {
-          const s = arrive(w, t);
-          if (s.a > 0.002) paint(ctx, w.w, x, y + (1 - s.k) * px * 0.2, px, { alpha: s.a * f1 });
-        }
-        x += adv + px * 0.3;
+        if (i === 2) { x = 250; row = 1; }
+        x += coilWord(ctx, w, t, x, 1480 + row * 330, px, { amp: 34, freq: 0.0052, alpha: f1 });
       });
+      if (t > L1.words[0].start) note(ctx, 'STRAND 01  ·  TORSION 360°', 250, 2030, { px: 40, alpha: 0.8 * f1 });
     }
-    // line 2: a stack of rack plates in the right column
+    // line 2: a rack in the right column, filled top down, EMPIRE the big base unit
     const fade = outFade(t, P.to - 0.25, P.to);
-    const px = 150, xr = 3620, rowH = px * 1.16;
     const words = L2.words;
-    // the plates stack top down in fixed rows: each lands in place (a word holds still once it
-    // arrives), TO at the top and EMPIRE at the bottom
+    const pxOf = (w) => (keyOf(w.w).startsWith('empire') ? 190 : 132);
+    const W = Math.max(...words.map((w) => measure(ctx, w.w, pxOf(w)))) + 330, xr = 3600, x0 = xr - W;
+    let yt = 700;
     words.forEach((w, i) => {
-      if (t < w.start) return;
-      const y = 1820 - (words.length - 1 - i) * rowH;
       const isEmp = keyOf(w.w).startsWith('empire');
-      const adv = measure(ctx, w.w, px) - px * 0.26;
-      const x = xr - adv;
-      const a = clamp01((t - w.start) / 0.06) * fade;
-      // the plate
-      ctx.fillStyle = `rgba(6, 9, 9, ${(0.62 * a).toFixed(3)})`;
-      ctx.fillRect(x - 40, y - px * 0.98, adv + 80, px * 1.1);
-      ctx.fillStyle = `rgba(80, 255, 140, ${(0.9 * a).toFixed(3)})`;
-      for (let j = 0; j < 6; j++) if (((j * 7 + i * 3 + Math.floor(t * 6)) % 5) > 1) ctx.fillRect(x - 40 + 16 + j * 26, y + px * 0.04, 14, 6);
-      // the reticle's tag sits to the left of the plate, not above it on the LITTLE plate's row
-      if (isEmp) { lockOn(ctx, w, t, x, y, px, { alpha: fade }); note(ctx, 'ASSET 01', x - 120, y - px * 0.3, { px: 34, align: 'right', color: '0, 255, 170', alpha: 0.9 * a }); }
-      else paint(ctx, w.w, x, y, px, { alpha: a });
+      const px = pxOf(w);
+      const h = isEmp ? px * 1.5 : px * 1.32;
+      const top = yt;
+      yt = top + h + 26;
+      if (t < w.start - 0.02) return;
+      const u = t - w.start + 0.02;
+      const k = ease.out3(u / 0.08);
+      const a = clamp01(k * 1.5) * fade;
+      const dx = (1 - k) * 160;                        // slides into the rack from the right
+      const px0 = x0 + dx;
+      // the plate: black anodised face, silver hairline, vent slots, status LEDs, unit number
+      ctx.strokeStyle = `rgba(190, 196, 214, ${(0.7 * a).toFixed(3)})`; ctx.lineWidth = 3;
+      ctx.strokeRect(px0, top, W, h);
+      // (no vent slots: beside the word they read as stray letters)
+      const on = (j) => ((j * 5 + i * 3 + Math.floor(t * 5)) % 4) > 0;
+      for (let j = 0; j < 3; j++) {
+        ctx.fillStyle = j === 2 && isEmp ? `rgba(255, 60, 170, ${(0.95 * a).toFixed(3)})` : `rgba(90, 255, 130, ${((on(j) ? 0.95 : 0.25) * a).toFixed(3)})`;
+        ctx.fillRect(px0 + W - 60, top + h * (0.24 + j * 0.2), 22, h * 0.1);
+      }
+      note(ctx, `U${String(i + 1).padStart(2, '0')}`, px0 + W - 100, top + h * 0.62, { px: 32, align: 'right', color: '160, 168, 190', alpha: 0.85 * a });
+      paint(ctx, w.w, px0 + 140, top + h * 0.5 + px * 0.36, px, { alpha: a });
     });
     const na = Math.min(clamp01((t - b0) / 0.3), fade);
-    if (na > 0.01) note(ctx, 'LOT 06  ·  SKYLINE  ·  8 TOWERS  ·  MATT 23:6', 240, 1980, { rule: 620, alpha: 0.85 * na });
+    if (na > 0.01) note(ctx, 'RACK 06  ·  5U  ·  SKYLINE', xr, 600, { px: 40, align: 'right', rule: 0, alpha: 0.85 * na });
   },
 });

@@ -1,144 +1,178 @@
 // 25 · "The stones will speak My will" (the climax, held to 150 s)
-// Back in the dark wet data hall of s24: the three rigid steel vipers stand coiled, and round them
-// lie six rough chunks of the fallen empire's broken concrete, fracture faces raw. Each chunk rises
-// on its word; the word is cut into its face and burns white-hot from inside: light breaks out of the
-// fractures round it, scorches the face, and throws warm-white light over the steel and the haze.
-// The stones speak instead of the vipers. A camera snap on "My". On the held "will" every stone
-// blazes and rises, and the light floods upward (s26 pours it into the chalice).
-import { grade, rgb, orbit, linesFrom, spring, clamp01, ease, mix } from '/song/lib/look.js';
+// It opens on s24's refusal, whole: the three steel control pylons with their rigid cable-vipers
+// wound tight round them, the access rails, the wall of frozen LED faces behind. On "stones" white-hot
+// light cracks through the pylons under the coils and through the wall behind them, and the vipers
+// stand in hard silhouette against it, unbent, not destroyed. Then the camera widens in held steps,
+// one per word, and the system's own materials testify: the wall between the pylons, the dead face
+// screens (each face gives way to light), the floor slab: each lights from within, cracking white-hot
+// round the word it carries. "My" is the one gold-white light, on the centre screen. On the held
+// "will" everything blazes.
+import { grade, rgb, linesFrom, clamp01, ease, mix } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
+import { CYBER_GLSL } from '/song/lib/x-cyber.js';
+import { XB_GLSL } from '/song/lib/x-b.js';
+import { XF_GLSL } from '/song/lib/x-f.js';
 
 const [L] = linesFrom('The stones will speak');
-// stone rest positions (x, z) in an arc in front of the vipers
-const XZ = [[-1.1, 0.55], [-0.66, 0.72], [-0.22, 0.8], [0.22, 0.8], [0.66, 0.72], [1.1, 0.55]];
+
+// the six surfaces that carry the words: world centre of the word zone, right axis, up axis,
+// zone half size (m) and the word's cap height (m)
+export const SURF = [
+  // laid out in reading order: THE STONES WILL across the face screens, SPEAK MY on the wall
+  // between the pylons, and the held WILL on the floor slab
+  { c: [-1.25, 2.05, -2.535], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0.36, 0.22], h: 0.3 },   // The: left face screen
+  { c: [0.0, 2.05, -2.535], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0.46, 0.22], h: 0.3 },     // stones: centre face screen
+  { c: [1.25, 2.05, -2.535], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0.36, 0.22], h: 0.3 },    // will: right face screen
+  { c: [-0.62, 0.78, -2.535], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0.5, 0.2], h: 0.3 },     // speak: wall, left of centre
+  { c: [0.62, 0.78, -2.535], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0.34, 0.26], h: 0.4 },    // My: wall, right of centre
+  { c: [0.0, 0.021, 0.95], ax: [1, 0, 0], ay: [0, 0, -1], hs: [0.74, 0.34], h: 0.44 },     // will: floor slab
+];
+const v3 = (a) => `vec3(${a.map((x) => x.toFixed(3)).join(', ')})`;
+const v2 = (a) => `vec2(${a.map((x) => x.toFixed(3)).join(', ')})`;
+
+// camera keys: close on the pylons, then held steps outward, one per word
+const K = [
+  { pos: [0.0, 1.1, 2.45], tg: [0.0, 1.05, -0.4], fov: 44 },
+  { pos: [-0.25, 1.75, 2.9], tg: [-0.5, 1.8, -1.0], fov: 46 },
+  { pos: [0.0, 1.8, 3.0], tg: [0.0, 1.75, -1.0], fov: 46 },
+  { pos: [0.0, 1.7, 3.2], tg: [0.0, 1.5, -1.0], fov: 47 },
+  { pos: [0.0, 2.0, 4.6], tg: [0.0, 0.95, -0.6], fov: 48 },
+  { pos: [0.0, 1.9, 4.3], tg: [0.0, 1.1, -0.8], fov: 48 },
+];
 
 export function rig(P) {
-  const t0 = P.from;
   const ws = L.words;               // The stones will speak My will
-  const tMy = ws[4].start, tWill = ws[5].start;
-  const rise = (t) => ease.inOut3((t - (tWill + 0.5)) / (P.to - tWill - 0.5));
+  const on = ws.map((w) => w.start);
+  // segments [t0, t1, fromKey, toKey]: each word lands while the camera holds still
+  const seg = [
+    [on[1] + 0.14, on[2] - 0.02, 0, 1],
+    [on[2] + 0.14, on[3] - 0.01, 1, 2],
+    [on[3] + 0.14, on[4] - 0.02, 2, 3],
+    [on[4] + 0.15, on[5] - 0.02, 3, 4],
+    [on[5] + 0.16, P.to, 4, 5],
+  ];
+  const lerpK = (a, b, k) => ({ pos: mix(a.pos, b.pos, k), tg: mix(a.tg, b.tg, k), fov: mix(a.fov, b.fov, k) });
   const camera = (t) => {
-    const u = t - t0;
-    const snap = ease.out5((t - tMy) / 0.22);
-    const up = rise(t);
-    return orbit(t, {
-      target: mix(mix([0.0, 0.45, 0.2], [0.05, 0.55, 0.3], snap), [0.1, 1.05, 0.3], up),
-      yaw: mix(-0.3 + 0.04 * u, 0.02 + 0.03 * u, snap),
-      pitch: mix(mix(0.2, 0.1, snap), -0.02, up),
-      dist: mix(3.6 - 0.1 * u, 3.5 - 0.08 * u, snap) + 0.4 * up,
-      fov: 36, drift: 0.005,
-    });
+    let c = K[0];
+    for (const [t0, t1, a, b] of seg) {
+      if (t < t0) break;
+      const last = b === 5;
+      const k = last ? ((x) => x * x * (3 - 2 * x))(clamp01((t - t0) / (t1 - t0))) : ease.inOut3(clamp01((t - t0) / (t1 - t0)));
+      c = lerpK(K[a], K[b], k);
+    }
+    return { pos: c.pos, target: c.tg, fov: c.fov, roll: 0 };
   };
-  const lift = (t, i) => {
-    const w = ws[i];
-    const s = spring(t, w.start - 0.1, 0.5, 0.25);
-    return 0.32 * s + 0.08 * clamp01((t - w.start) / 3) + 0.75 * ease.in2(rise(t)) * (1 + 0.05 * Math.sin(i * 1.7));
-  };
+  // how brightly each surface burns: nothing before its word, a flare on the onset, then a steady
+  // burn that grows on the held "will"
+  const all = (t) => ease.inOut3(clamp01((t - on[5]) / 2.4));
   const glow = (t, i) => {
-    const w = ws[i];
-    if (t < w.start - 0.03) return 0;
-    const u = t - w.start;
-    return 0.8 + 1.4 * Math.exp(-u * 4) + 1.2 * clamp01((t - tWill) / 2.0) + 1.5 * rise(t);
+    if (t < on[i] - 0.03) return 0;
+    const u = t - on[i];
+    return 0.9 + 1.3 * Math.exp(-u * 5) + 1.4 * all(t);
   };
-  const pos = (t, i) => [XZ[i][0], 0.17 + lift(t, i), XZ[i][1]];
-  return { camera, lift, glow, rise, pos, tWill, ws };
+  // the pylons crack on "stones"
+  const pylon = (t) => (t < on[1] - 0.03 ? 0 : 0.8 + 1.6 * Math.exp(-(t - on[1]) * 3) + 1.2 * all(t));
+  return { camera, glow, all, pylon, ws, on };
 }
 
 export default (P) => {
-  const { camera, glow, rise, pos, ws } = rig(P);
+  const R = rig(P);
   return {
     name: 's25-stones', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + VIPER_GLSL + /* glsl */ `
-uniform vec3 uSC[6];
+    frag: STUDIO_GLSL + CYBER_GLSL + VIPER_GLSL + XB_GLSL + XF_GLSL + /* glsl */ `
 uniform float uGlow[6];
-vec3 stoneQ(vec3 p, int i) {
-  float fi = float(i);
-  vec3 q = p - uSC[i];
-  // face turned toward the camera's side of the arc, a slight tilt
-  q.xz *= rot(-0.35 * (fi - 2.5) / 2.5 + 0.12 * (hash11(fi + 2.0) - 0.5));
-  q.xy *= rot(0.12 * (hash11(fi + 4.0) - 0.5));
-  return q;
-}
-// a rough chunk of broken concrete: a block with raw, noisy fracture faces at the back and sides
-float stone(vec3 q, float fi) {
-  vec3 b = vec3(0.2, 0.15, 0.13) + vec3(0.03, 0.03, 0.03) * vec3(hash11(fi + 1.0), hash11(fi + 3.0), hash11(fi + 5.0));
-  float d = sdRoundBox(q, b, 0.012);
-  float fr = 0.035 * fbm(q * 9.0 + fi * 3.1, 3);
-  for (int k = 0; k < 4; k++) {
-    vec3 nn = hash33(vec3(fi, float(k), 7.0)) - 0.5;
-    nn.z = -abs(nn.z) - 0.15;                    // fractures on the back and sides; the face stays
-    nn = normalize(nn);
-    d = max(d, dot(q, nn) - 0.07 - 0.07 * hash11(fi * 3.0 + float(k)) + fr);
-  }
-  // a chipped top edge on the face
-  d = max(d, dot(q, normalize(vec3(0.3 * (hash11(fi + 8.0) - 0.5), 1.0, 0.8))) - b.y * 0.95 + fr * 0.6);
-  return d + 0.005 * (vnoise(q * 40.0) - 0.5);
-}
+uniform float uPy, uAll;
+${SURF.map((s, i) => `const vec3 SC${i} = ${v3(s.c)}; const vec2 SH${i} = ${v2(s.hs)};`).join('\n')}
+// s24's pylons, rails and vipers, exactly
+const float PR = 0.17, PHT = 2.0;
+vec3 pyl(int k) { return k == 0 ? vec3(-1.15, 0.0, 0.1) : (k == 1 ? vec3(0.0, 0.0, -0.25) : vec3(1.15, 0.0, 0.1)); }
+const vec3 HOT = vec3(3.2, 3.0, 2.7);
 float mapObj(vec3 p, out int id) {
-  id = 3;
-  float d = 1e9;
-  for (int i = 0; i < 6; i++) {
-    float bs = length(p - uSC[i]) - 0.34;
-    if (bs > 0.04) { if (bs < d) { d = bs; id = 10 + i; } continue; }
-    float s = stone(stoneQ(p, i), float(i));
-    if (s < d) { d = s; id = 10 + i; }
+  id = 5;
+  float d = sdBox(p - vec3(0.0, 1.5, -2.6), vec3(3.4, 1.5, 0.06));
+  for (int k = 0; k < 3; k++) {
+    vec3 q = p - pyl(k);
+    float v = sdCyl(q - vec3(0.0, PHT * 0.5, 0.0), PR, PHT * 0.5);
+    v = min(v, sdRoundBox(q - vec3(0.0, 0.06, 0.0), vec3(0.27, 0.06, 0.27), 0.01));
+    v = min(v, sdCyl(q - vec3(0.0, PHT + 0.04, 0.0), PR + 0.04, 0.04));
+    if (v < d) { d = v; id = 2 + k; }
   }
-  // back row of racks, far behind in the hall
-  float rk = sdRacks(p, -2.6, 0.64, 2.0, 0.04, 4.0);
-  if (rk < d) { d = rk; id = 6; }
-  float b = length(p - vec3(0.0, 0.6, -0.4)) - 1.4;
-  if (b > 0.25) return min(d, b);
-  // the three rigid vipers exactly as s24 leaves them
+  float r = sdCapsule(p, vec3(-1.15, 1.05, 0.1), vec3(1.15, 1.05, 0.1), 0.028);
+  r = min(r, sdCapsule(p, vec3(-1.15, 0.55, 0.1), vec3(1.15, 0.55, 0.1), 0.022));
+  if (r < d) { d = r; id = 6; }
   gVipFlick = 0.8;
   for (int k = 0; k < 3; k++) {
+    vec3 q = p - pyl(k);
+    if (k == 1) q.x = -q.x;
     float fk = float(k);
-    float R = 0.075;
-    vec3 base = vec3(-0.75 + 0.75 * fk, 0.0, -0.25 - 0.3 * abs(fk - 1.0));
-    vec3 q = p - base;
-    float turns = 1.6;
-    float cb = coilBody(q, R, turns);
-    if (cb < d) { d = cb; id = 1; keepViper(); }
-    float phiMax = 6.2831853 * turns, rs = R * (0.9 + 2.15 * turns);
-    vec3 e = vec3(rs * cos(phiMax), 0.0, rs * sin(phiMax));
-    vec3 nq = q - e;
-    vec3 lq = vec3(nq.y + R * 0.3, nq.z, nq.x);
-    gVipTail = 1.0;
-    float v = sdViper(lq, 0.75 + 0.1 * fk, R, 0.1, 5.5, 0.8 + fk * 1.9, 0.55, 3.0, vec3(1, 0, 0));
-    gVipTail = 0.16;
+    float v = helixViper(q, PR + 0.075, 0.075, 0.48 + 0.05 * fk, 0.14, 1.55 + 0.12 * fk, 0.7 + 2.1 * fk, 0.42, 0.3);
     if (v < d) { d = v; id = 1; keepViper(); }
   }
   gVipFlick = -1.0;
+  // the floor slab in front of the pylons
+  float fl = sdRoundBox(p - vec3(0.0, 0.0, 1.05), vec3(1.6, 0.02, 0.6), 0.005);
+  if (fl < d) { d = fl; id = 7; }
   return d;
 }
+vec3 zoneLight(vec2 f, vec2 hs, float g, float seed, inout Mat m) {
+  vec2 c = crackLight(f, hs, seed, 0.12 + 0.18 * min(g, 3.0) + 0.9 * uAll);
+  m.alb *= 1.0 - 0.85 * c.y * step(0.01, g);
+  m.rough = mix(m.rough, 0.9, c.y * step(0.01, g));
+  return HOT * g * c.x;
+}
+Mat concrete(vec3 p, float k) {
+  Mat m = M(vec3(0.3, 0.3, 0.3) * (0.65 + 0.5 * fbm(p * 7.0, 3)), 0.85, 0.0);
+  return dirty(m, p, k);
+}
 Mat material(int id, vec3 p, vec3 n) {
-  if (id == 1) { Mat m = viperMat(1.0); m.alb *= 0.8; return dirty(m, p, 0.25); }
-  if (id == 6) return rackMat(p, n, -2.6, uTime);
-  int i = id - 10;
-  float fi = float(i);
-  vec3 q = stoneQ(p, i);
-  float g = 0.0;
-  for (int k = 0; k < 6; k++) if (k == i) g = uGlow[k];
-  // raw concrete, aggregate flecks, grime
-  float agg = smoothstep(0.62, 0.7, vnoise(q * 60.0));
-  Mat m = M(vec3(0.33, 0.32, 0.3) * (0.7 + 0.45 * fbm(q * 14.0, 3)) + agg * 0.12, 0.88, 0.0);
-  m = dirty(m, p + fi, 0.7);
-  // the cut: on the face, a scorched plate where the word is burned in (the crisp word sits on it
-  // in the lyric layer), and white-hot light breaking out through fractures radiating from it
-  float face = smoothstep(0.09, 0.12, q.z);
-  vec2 f = q.xy;
-  // an irregular scorched patch where the word is burned in (no frame: charred, ragged edges)
-  float pr = length(f * vec2(0.85, 2.1)) + 0.05 * (fbm(f * 18.0 + fi, 3) - 0.5);
-  float plate = smoothstep(0.17, 0.12, pr) * face;
-  // light breaking out through fractures that radiate from the word, reaching further as it burns
-  float e = voronoiEdge(f * vec2(6.0, 8.0) + fi * 5.0).x;
-  float gate = vnoise(f * 5.0 + fi * 9.0);
-  float reach = 0.12 + 0.1 * g;
-  float crack = smoothstep(0.045, 0.01, e) * smoothstep(reach + 0.06, reach - 0.04, pr - 0.1 + 0.08 * gate) * step(0.3, gate + 0.35 * smoothstep(0.25, 0.1, pr));
-  float rim = smoothstep(0.03, 0.0, abs(pr - 0.155)) * face * (0.4 + 0.6 * vnoise(f * 30.0));
-  m.alb = mix(m.alb, vec3(0.02, 0.018, 0.016), plate * sat(g));
-  vec3 hot = vec3(3.4, 3.1, 2.6);
-  m.emit = hot * g * (crack * (0.35 + 0.65 * face) + rim * 0.9) + hot * 0.05 * g * plate;
+  if (id == 1) { Mat m = viperMat(1.0); m.alb *= 0.5; return dirty(m, p, 0.2); }
+  if (id == 6) { Mat m = M(vec3(0.7, 0.71, 0.74), 0.18, 1.0); return dirty(m, p, 0.3); }
+  if (id == 5) {
+    Mat m = M(vec3(0.02, 0.02, 0.025), 0.3, 0.0);
+    if (n.z > 0.7) {
+      // the three face screens: frozen frowning faces, going dark as their word takes the screen
+      float i = clamp(floor(p.x / 1.25 + 0.5), -1.0, 1.0);
+      vec2 uv = vec2((p.x - i * 1.25) / 0.52, (p.y - 2.05) / 0.64);
+      float g = i < 0.0 ? uGlow[2] : (i > 0.0 ? uGlow[4] : uGlow[3]);
+      if (abs(uv.x) < 1.0 && abs(uv.y) < 1.0) {
+        vec3 ink = i == 0.0 ? vec3(0.9, 0.95, 1.1) : (i < 0.0 ? vec3(0.9, 0.3, 1.4) : vec3(0.35, 1.3, 0.5));
+        m.emit = faceScreen(uv, -0.45, 0.0, 5.0 + i * 7.0, ink, 30.0) * 0.6 * (1.0 - smoothstep(0.0, 0.6, g));
+        m.emit *= 1.0 + 1.5 * smoothstep(0.03, 0.0, abs(uv.y - 0.1 - 0.2 * i));
+        m.alb = vec3(0.012); m.rough = 0.08; m.clear = 1.0;
+        vec3 sc = i < 0.0 ? SC2 : (i > 0.0 ? SC4 : SC3);
+        vec2 hs = i < 0.0 ? SH2 : (i > 0.0 ? SH4 : SH3);
+        vec3 e = zoneLight(p.xy - sc.xy, hs, g, 4.0 + i, m) * scanlines(p.y * 900.0, 1.0);
+        if (i > 0.0) e *= vec3(1.05, 0.9, 0.62);
+        m.emit += e;
+      } else {
+        m = concrete(p, 0.7);
+        m.alb *= 0.5;
+        m.emit = zoneLight(p.xy - SC0.xy, SH0, uGlow[0], 1.0, m) + zoneLight(p.xy - SC1.xy, SH1, uGlow[1], 2.0, m);
+        // behind the vipers the wall itself splits with light on "stones"
+        m.emit += HOT * (0.6 * uPy + 1.3 * uAll) * fractureLines(p.xy, 11.0, 1.8) * step(p.y, 1.55);
+      }
+      m.emit += HOT * uAll * 1.1 * fractureLines(p.xy + 3.0, 13.0, 2.2) * (1.0 - step(abs(uv.x), 1.0) * step(abs(uv.y), 1.0) * 0.6);
+    }
+    return m;
+  }
+  if (id == 7) {
+    Mat m = concrete(p, 0.9);
+    m.rough = 0.35;
+    vec2 pg = abs(fract(p.xz / vec2(0.8, 0.6)) - 0.5);
+    m.alb *= 1.0 - 0.5 * smoothstep(0.49, 0.497, max(pg.x, pg.y));
+    vec2 f = vec2(p.x - SC5.x, -(p.z - SC5.z));
+    m.emit = zoneLight(f, SH5, uGlow[5], 6.0, m);
+    return m;
+  }
+  // pylon steel, brushed; under the coils white-hot light cracks through its skin
+  vec3 q = p - pyl(id - 2);
+  float a = atan(q.z, q.x);
+  Mat m = M(vec3(0.5, 0.51, 0.54), 0.2 + 0.12 * vnoise(vec2(a * 40.0, q.y * 2.0)), 1.0);
+  m = dirty(m, p, 0.35);
+  float band = smoothstep(0.05, 0.25, q.y) * smoothstep(1.95, 1.6, q.y);
+  float cr = fractureLines(vec2(a * PR * 1.4, q.y), float(id) * 3.0, 6.0) * band;
+  m.emit = HOT * uPy * cr * 1.6 + HOT * 0.03 * uPy * band;
   return m;
 }
 vec3 shade(vec2 fc) {
@@ -148,34 +182,35 @@ vec3 shade(vec2 fc) {
 }`,
     uniforms: {
       ...STUDIO_UNIFORMS,
-      uCycA: rgb('66, 84, 86', 1.6), uCycB: rgb('18, 24, 28', 1.2),
-      uFloorCol: rgb('100, 104, 100', 0.85), uFloorRough: 0.1, uGrime: 0.9,
-      uKeyDir: [-0.5, 0.75, 0.45], uKeyCol: [2.2, 2.5, 2.7], uKeySize: 0.3, uExpo: 1.1,
-      uRimA: [1.8, 2.0, 2.2], uRimB: [2.2, 1.1, 0.4],
-      uHaze: 0.04, uHazeCol: [0.04, 0.05, 0.055],
-      uSC: new Array(18).fill(0),
-      uGlow: [0, 0, 0, 0, 0, 0],
+      uCycA: rgb('62, 46, 88', 1.3), uCycB: rgb('14, 12, 22', 1.0),
+      uFloorCol: rgb('70, 72, 74', 0.8), uFloorRough: 0.1, uGrime: 0.9,
+      uKeyDir: [-0.4, 0.8, 0.45], uKeyCol: [1.6, 1.65, 1.9], uKeySize: 0.3, uExpo: 1.0,
+      uRimA: [1.8, 0.7, 2.6], uRimB: [0.7, 2.4, 0.9],
+      uHaze: 0.05, uHazeCol: [0.03, 0.025, 0.045],
+      uGlow: [0, 0, 0, 0, 0, 0], uPy: 0, uAll: 0,
     },
-    camera,
+    camera: R.camera,
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
-      const C = [0, 1, 2, 3, 4, 5].map((i) => pos(t, i));
-      const G = [0, 1, 2, 3, 4, 5].map((i) => glow(t, i));
-      u.uSC.value = C.flat(); u.uGlow.value = G;
-      // the burning faces light the steel and the haze: one light at the lit stones' centre of
-      // mass, one at the newest word's stone
-      const gs = G.reduce((a, b) => a + b, 0);
-      const cm = gs > 0 ? [0, 1, 2].map((k) => C.reduce((a, c, i) => a + c[k] * G[i], 0) / gs) : [0, 0.4, 0.6];
-      u.uP1.value = [cm[0], cm[1] + 0.1, cm[2] + 0.25];
-      u.uP1c.value = [2.6, 2.4, 2.1].map((c) => c * gs * 0.22);
-      let last = 0; ws.forEach((w, i) => { if (t >= w.start) last = i; });
-      u.uP2.value = [C[last][0], C[last][1], C[last][2] + 0.3];
-      u.uP2c.value = [2.6, 2.4, 2.1].map((c) => c * G[last] * 0.35);
-      const r = rise(t);
-      u.uHaze.value = 0.04 + 0.04 * r;
-      u.uHazeCol.value = [0.04, 0.05, 0.055].map((c, k) => c + [0.08, 0.072, 0.06][k] * (gs / 14 + 0.7 * r));
-      u.uCycB.value = mix(rgb('18, 24, 28', 1.2), rgb('226, 214, 192', 0.32), ease.inOut3(r));
+      const G = SURF.map((_, i) => R.glow(t, i));
+      u.uGlow.value = G;
+      const py = R.pylon(t), all = R.all(t);
+      u.uPy.value = py; u.uAll.value = all;
+      // light from the burning pylons, from behind the coils (silhouette), and from the newest word
+      u.uP1.value = [0.0, 1.0, -1.6];
+      u.uP1c.value = [3.0, 2.8, 2.5].map((c) => c * py * 0.5);
+      let last = -1; R.on.forEach((o, i) => { if (t >= o) last = i; });
+      if (last >= 0) {
+        const s = SURF[last];
+        const nrm = last === 5 ? [0, 1, 0] : [0, 0, 1];
+        u.uP2.value = s.c.map((v, k) => v + nrm[k] * 0.45);
+        const warm = last === 4 ? [3.2, 2.6, 1.6] : [3.0, 2.85, 2.6];
+        u.uP2c.value = warm.map((c) => c * G[last] * 0.35);
+      }
+      u.uHaze.value = 0.05 + 0.05 * all;
+      u.uHazeCol.value = [0.03 + 0.1 * all, 0.025 + 0.095 * all, 0.045 + 0.08 * all];
+      u.uCycB.value = mix(rgb('10, 10, 16', 1.0), rgb('236, 228, 214', 0.4), all);
     },
-    post(t) { return grade(t, { exposure: 1.0, bloom: 0.1, threshold: 1.1 }); },
+    post(t) { return grade(t, { exposure: 1.0, bloom: 0.1, threshold: 1.1, ca: 0.2 }); },
   };
 };

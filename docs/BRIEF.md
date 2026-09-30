@@ -1,140 +1,227 @@
-# Poisoned Cups: director brief
+# Poisoned Cups v2: director brief
 
-Song: *Poisoned Cups* (Suno). Dark 808s and minor piano stabs, 91 BPM, 2:49. Jesus' woes to the
-scribes and Pharisees in Matthew 23, sung in his voice: polished cups with poison inside, long
-fringes, whitewashed tombs over bones, straining gnats and swallowing camels, heavy loads, the
-widow, the gate, painted graves, "brood of vipers, who warned you from the fire?", and at the end
-mercy: "a cracked reed bruised I will never crush," and "the stones will speak My will."
-Vocals end at 149.5 s; the instrumental outro runs to 168.8 s.
+This is the author's full rework plan for v2, which replaces v1 (kept as `docs/BRIEF-v1.md` and tag
+`v1`). Follow it scene by scene. Where it asks for things the code-only engine can't do literally
+(real faces), the engine notes below say how to do them.
 
-Theme gate: the song's author asked for the most striking video "based on your tastes" and to render as soon as
-possible (thread, 2026-09-30). The theme choice is delegated and recorded in intake/theme-choice.json.
+## Core reframe
 
-## The author's direction, which overrides anything gentler below
+Matthew 23 translated into the machine age. v1 leaned on ancient, stone and monument imagery, and
+some object metaphors felt dumb, especially the gloves. v2 is a dark near-future ASI world:
+AI foom, elite coordination, technocratic control, consolidated power, surveillance, paywalls,
+corruption behind polished interfaces, safety theatre, branding over truth, institutional rot
+behind clean systems. Moral corruption is revealed through data centres, control rooms, cables,
+screens, neon faces, ad-tech visuals, biometric systems, polished launch aesthetics and synthetic
+authority. It must not feel like Bible-times props re-skinned.
 
-"I don't want this holy roller. This is a grimy dark vengeful song for the cyber tech cyberpunk ASI
-age. It thumps and the beats are hard and the rhymes are venomous." "Words and graphics, biting
-graphics, techno." "The technocrats are part of these brood of vipers, all the ones who lie for gains
-and the misery of others."
+## Visual identity
 
-So: grimy, dark, vengeful, industrial. The Pharisees of Matthew 23 are today's technocrats, and the
-film shows their world: polished product launches, white data-centre halls, glass towers, paywalls,
-surveillance, terms of service, and behind every polished surface the rot, the grime, the bones and
-the fire. Words are weapons: they strike, slash, glitch and lock on like targets, hard on the kicks.
-Dark does not mean murky: every frame keeps a strong light source (fluorescent tubes, sodium lamps,
-screens, acid-green poison glow, fire), wet reflective surfaces and sharp, readable type.
-No real people, companies, logos or faces; the technocrats are shown through their things.
+- Tone: grimy industrial cyberpunk, ASI age, threatening, prophetic, accusatory.
+- Palette: toxic greens, deep purples, cold white, black, metallic silver, occasional hot
+  magenta. Gold only, and sparingly, where Christ's authority is emphasised.
+- Environment: wet concrete, glossy black surfaces, sodium spill, fluorescent tubes, scanlines,
+  LED walls, rack lights, server aisles, vapour, holographic overlays, digital noise, sparks,
+  static, smoke.
+- Texture: rain, grime, bloom, chromatic aberration, compression scars, glitch tears, scan jitter,
+  heat haze.
+- Camera: slow pushes, snap zooms, reveal tilts, overhead plunges, locked-on target UI, hard
+  punctuation on kicks and snares.
+- Grammar: outside against inside, clean interface against rotten core, polished launch against
+  poisoned internals.
+- People: no actor narrative. Anonymous neon faces, ad-faces, surveillance faces, ghosted crowd
+  silhouettes, campaign-screen faces, synthetic spokesperson faces, authority imagery. No real
+  politicians and no logos.
 
-## The idea: outside and inside (keep the grammar, restyled for the ASI age)
+## Hard rules (do not do)
 
-Matthew 23:25 to 27 is the whole film. Every object is first shot from the outside like a luxury
-product film: gold and silver polished to a mirror, white marble, silk tassels, a lacquered studio
-floor with softbox highlights and coloured strip lights. Then the camera goes inside, or the light
-turns, and we see what the polish hides: black poison in the cup, bones in the tomb, blood under
-the floor, vipers in the nest. The beauty is real, which is why the rot lands. No people, no faces,
-no hands: objects, light and Scripture. The film ends with the one thing the song asks for, the
-inside of the cup made clean: clear water and light (23:26), and the stones speaking.
+- No gloves, in any form.
+- No gears, wheels or clockwork.
+- No fake ancient ruins as the main visual language; no literal scrolls, graves or stone monuments
+  leaned on.
+- No redaction-bar reveals at all.
+- No flesh vipers. Vipers are tech: cable snakes, braided conduit, black fibre bundles, segmented
+  robotic serpents, signal traces.
 
-**Running motif: the cup.** A gold chalice opens the film being polished, is looked into in
-scene 1, returns as the offering box, the basin, the silver in the palms, and in the outro stands
-clean, full of clear water with light in it.
+## Keep
 
-**The fire.** "Who warned you from the fire?" is the chorus hook. Every chorus has fire (flame
-volumes from lib/flame.js) and a viper, each time seen differently: a nest of black chrome vipers in
-a ring of fire; a single viper rising; vipers pouring from a cup; fire at its height.
+The tech vipers (coiled cables, cable serpents), the data-centre interiors, the chalice as the main
+recurring symbol, the Matthew 23 accusation structure, polished outside against corrupted inside.
 
-## Design system
+## Text system (rebuilt from scratch)
 
-- **Palette.** Gold (242 196 104), bone (246 240 230), ink, poison green-black, blood red (138 16 30),
-  and the flame (255 122 56), the only colour that glows. Backdrops are deep but lit, never black:
-  aubergine, oxblood, verdigris, marble white, ember. Mercy at the end is white and pale gold.
-- **Voices by meaning** (lib/type.js): God, I and My (the speaker) in gold UnifrakturCook blackletter;
-  fire, vipers, poison, blood and bones in Pirata One flame; the polished surface (cups, white stone,
-  prayers, incense, gate, scrolls) in widely tracked Garamond capitals, like a luxury house's
-  logotype; greed and weight (silver, heavy loads, twist, sell) in blood-red Anton; mercy (hearts,
-  turn, reed, bruised, widow, poor, truth) in Garamond italic; plain words in Anton; their own claims
-  "we see" and "we're clean" hand-written in Permanent Marker; chapter and verse in mono.
-- **Product-film annotations.** Small mono spec notes beside the big type, in the voice of a
-  catalogue ("LOT 01 · CHALICE · 24K · MATT 23:25"), with hairline rules. Never invented lyrics.
+Text is generated by systems: HUD lock-ons, terminal echoes, stacked dossier labels, waveform
+extrusion, scanline assembly, voltage flicker, retinal overlays, machine captions, feed
+interruptions, clipping masks, predictive-text collisions. Behaviour by meaning:
 
-## Scenes (tools/plan.txt, times in film.json)
+- **Christ / I / My / God**: restrained, authoritative, luminous, gold-white or pale warm light,
+  stable and never glitched.
+- **Accusation**: sharp, violent, heavy, glitch-cut, on the hit.
+- **Hypocrisy and their claims**: ad copy, slogans, PR screens; polished and fake.
+- **Mercy**: softened italics, calm spectral handwriting.
 
-| Scene | Lyric | Outside | Inside / turn |
-|---|---|---|---|
-| s00-cup | (intro) | A gold chalice turning on a plinth, a silk cloth circling and polishing it by itself; title POISONED CUPS, MATTHEW 23 | The cloth passes and the rim flashes |
-| s01-poison | You polish cups / Leave the poison in | The polished rim from above | Camera rises over the rim: black-green poison, glossy, slowly turning |
-| s02-fringes | Long fringes swing / But your hearts stay thin | Long white silk tassels swinging like pendulums | The threads thin to single strands |
-| s03-tomb | White stone walls / Over rotting bones | A pristine white marble tomb | The camera slips through a crack: bones in a shaft of light |
-| s04-prayers | Soft-spoke prayers / Cut like sharpened stones | Smooth polished river stones on silk | They split into sharp obsidian blades rising |
-| s05-vipers | Brood of vipers / Who warned you from the fire? | A nest of black chrome vipers | Ringed by fire rising |
-| s06-empire | You twist the truth / To build your little empire | A gold bar twisting into a helix | Gold ingots stacking into a tiny palace |
-| s07-prophets | You honor prophets / That your fathers tried to kill | Marble obelisks with gold laurel wreaths | Red running from their bases |
-| s08-see | Brood of vipers / Do you think I can't see still? | A viper in the dark | A single beam of light sweeps and finds everything |
-| s09-gnat | You strain a gnat / Let the camel through | A fine gold sieve holding one gnat | A brass camel figure drops straight through |
-| s10-loads | Heavy loads / That you never lift too | Iron weights bound in rope lowering | A gold rod beside them that never touches |
-| s11-widow | Blind guides smile / While the widow pays | Gold offering box | Two small copper coins fall in |
-| s12-gate | You sell the gate / Then you guard the gate | An ornate gilt gate with a price tag | It shuts and a lock snaps |
-| s13-vipers2 | Brood of vipers / Who warned you from the fire? | One viper rising tall | Fire behind it |
-| s14-scrolls | You kiss the scrolls / But your tongues call God a liar | A scroll unrolling on a lectern, a wax seal | A viper's tongue flicks over it |
-| s15-graves | You paint the graves / With your incense and your skill | White-painted graves, a swinging censer, incense smoke | The paint cracks |
-| s16-see2 | Brood of vipers / Do you think I can't see still? | Vipers pouring from a cup | Light floods the frame on "see" |
-| s17-we-see | You say "we see" / So your darkness stays | Gold spectacles with black lenses | The room darkens in the lenses |
-| s18-clean | You say "we're clean" / But your hands still raise | A silver basin of clear water, two white gloves standing upright | The water clouds |
-| s19-silver | Silver in your palms / Blood on the floor | Silver coins cascading | Red spreads across the white floor |
-| s20-door | You stand in the door / Won't walk in / Or let the poor | A tall doorway full of warm light | A gold bar laid across it |
-| s21-vipers3 | Brood of vipers / Who warned you from the fire? | Fire at its height | Vipers silhouetted |
-| s22-fall | Turn your hearts / Let the proud dreams fall and tire | The gold palace tower | It topples slowly, piece by piece |
-| s23-reed | A cracked reed bruised / I will never crush or kill | A single green reed, cracked, and a smouldering wick | Warm light gathers round them; nothing breaks |
-| s24-bend | But brood of vipers / If you won't bend | Vipers stiff as iron | A gold rod that will not bend |
-| s25-stones | The stones will speak My will | Plain stones on the floor | They lift and glow, carved with light |
-| s26-clean-cup | (outro) | The cup again | Inside: clear water and light; end title and MATTHEW 23:26 |
+Key words can lock on, fracture, overload, ghost, bleed, split, buffer, cascade or misregister.
+Text belongs to the world (on screens, on surfaces, from the liquid), not pasted on top.
 
-## Timing rules
+## Engine notes (code-only)
 
-Every word appears on its measured onset and never early. Cuts land on beats. Word hits land on 808s
-and piano stabs. The camera eases into downbeats and never stops dead.
+- Faces are stylised: line-drawn or LED-pixel faces on screens (a few strokes for eyes, brows and a
+  mouth, scanlined, glitching), silhouettes for crowds. No realistic faces.
+- Glitch tears, chromatic aberration and scan jitter are drawn in the picture (a band offset in
+  the shader on hits) and by the grade's `ca`; keep them brief so frames stay readable.
+- Readability gates still apply: every word 4.5:1 against what's behind it, sharp, not overlapping,
+  fully resolved within 0.12 s of its onset, holding still for 8 frames once landed.
 
-## Inspiration
+## Scenes
 
-Reference `internal-psalm23-mercy-material-handoff`: read the word plainly, then change its material
-in the same place. Adapted as "see the outside plainly, then see inside at the same station."
+Each row: lyric, picture, text. Times come from `film.json` (cuts on measured beats).
 
-## Restyled scene list for the new direction (use these pictures, not the older table above)
+**00 · Intro (0:00–0:09).** A black titanium chalice with a thin gold lip turns in darkness like a
+luxury product reveal, in a wet industrial data hall with vertical purple-green light tubes.
+Microscopic scanlines crawl over the cup like forensic inspection. Its reflections show server
+racks, LED grids and ghostly synthetic faces on surrounding screens. A tiny green contamination
+pulses under the rim, almost invisible. Text: POISONED CUPS assembles from broken scanlines and
+unstable signal fragments, then holds; MATTHEW 23 appears as a system classification tag.
 
-| Scene | Outside (the polish) | Inside (the rot) |
-|---|---|---|
-| s00-cup | A brushed-titanium chalice on a product-launch plinth in a wet concrete hall, a scanning laser line polishing across it; title POISONED CUPS glitching in | The laser passes and acid-green light leaks from the rim |
-| s01-poison | The chalice rim from above, perfect | Acid-green poison inside, glowing, with a slick of oil and floating circuit debris |
-| s02-fringes | Bundles of fibre-optic cable hanging like prayer fringes, swinging, lit at the tips | The fibres fray and go dark one by one |
-| s03-tomb | A seamless white server monolith, spotless, humming | Through a crack: rusted racks, tangled wiring like ribs, grime, a skull-white fan hub |
-| s04-prayers | A smooth voice-assistant waveform of polished chrome beads | The beads shatter into obsidian shards that fly like blades |
-| s05-vipers | A nest of vipers made of black ribbed cable with chrome heads | A server fire rising round them |
-| s06-empire | A glowing optical fibre twisting into a helix | Stacked GPU slabs and server towers building a little skyline empire |
-| s07-prophets | White memorial pillars with gold laurel and screens | Blood-red coolant running from their bases |
-| s08-see | A cable-viper in the dark, surveillance lenses everywhere | One burning white light sweeps the hall and finds everything; I and SEE land big |
-| s09-gnat | A fine gold filter mesh (a content filter) catching one tiny glitch bug | A huge brass camel falls straight through it |
-| s10-loads | Crates bound in straps lowering onto a conveyor, sodium light | A gold rod beside them never touches |
-| s11-widow | A sleek payment terminal / offering slot glowing | Two worn copper coins drop in; the screen says nothing |
-| s12-gate | A gilt paywall gate with a laser grid and a price tag | It slams and the lock bolts shoot |
-| s13-vipers2 | One cable-viper rising tall | Fire behind it |
-| s14-scrolls | An endless terms-of-service scroll unrolling on a lectern of glass, a wax seal | A forked tongue flicks over it |
-| s15-graves | Graves painted glossy white with LED incense smoke drifting | The paint cracks, grime bleeding through |
-| s16-see2 | Vipers pouring from the chalice | Blinding light on SEE |
-| s17-we-see | Gold goggles / headset with black lenses | The hall darkens inside the lenses |
-| s18-clean | A sterile clean room, a silver basin, two white gloves standing upright | The water clouds black |
-| s19-silver | Silver coins and tokens cascading | Blood spreading across the white clean-room floor |
-| s20-door | A tall doorway of warm light | Security bars and a gold barrier across it |
-| s21-vipers3 | Fire at its height through the data hall | Vipers silhouetted |
-| s22-fall | The skyline empire of server towers | Toppling, slabs falling |
-| s23-reed | In the rubble, one cracked green reed and a smouldering wick | Warm light gathers round them: mercy, still gritty |
-| s24-bend | Cable-vipers rigid as steel beside a gold rod that will not bend | |
-| s25-stones | Broken concrete stones on the wet floor | They lift and burn with carved white light: the stones speak |
-| s26-clean-cup | The chalice again | Inside clean: clear water and white light; end title, MATTHEW 23:26 |
+**01 · You polish cups / Leave the poison in.** Extreme close-up of the chalice being
+precision-polished by a laser-cleaning sweep; the camera rises over the rim into toxic luminous
+green fluid swirling with microchips, cable scrap, ash and oily residue. Text: YOU POLISH CUPS
+sleek and pristine along the outer contour; LEAVE THE POISON IN blooms from the liquid; "poison"
+target-locked in acid green.
 
-Palette for the new direction: wet black-green concrete, cold fluorescent white, sodium orange,
-acid green (poison, the glow), fire orange, blood red, gold for God's words. Lit hard from few sources,
-haze in the air, grime on everything.
+**02 · Long fringes swing / But your hearts stay thin.** Hanging fibre-optic tassel bundles and
+braided ID lanyards in a corporate-lit passage, swaying under fluorescent strips, glowing tips
+failing one by one; blurred ad-faces smile from broken LED signage behind. Text: LONG FRINGES SWING
+hangs vertically like product tags or credential strips; HEARTS STAY THIN as a shrinking waveform,
+a narrowing signal trace.
 
-Word weapons (lib/type.js): `strike` (drives in with a shake), `slash` (cut on a diagonal, halves
-slide apart then lock), `glitch` (sliced and offset, snapping clean on the onset), `lockOn` (a HUD
-reticle closes on the word), `redact` (black bars ripped off to reveal the word). Hits on the kicks.
+**03 · White stone walls / Over rotting bones.** A seamless white server monolith, spotless in a
+clean corridor; a thin green crack opens and the camera drives through into a dense corrupted
+cavity: black blades, fibre trunks, cable trays, blinking LEDs, coolant lines, pulsing decay.
+Text: WHITE STONE WALLS clean, sterile, architectural; OVER ROTTING BONES builds from flickering
+machine labels over the internals.
+
+**04 · Soft-spoke prayers / Cut like sharpened stones.** A soft voice-assistant waveform floats in
+darkness; on "cut" it extrudes into razor-thin obsidian shards and glassy vector slivers that
+slash across frame; faceless smiling digital concierges flicker behind. Text: SOFT-SPOKE PRAYERS
+smooth and low-amplitude; CUT a hard signal spike; SHARPENED shears into fragments; "stones" implied
+by jagged geometry, not rocks.
+
+**05 · Brood of vipers / Who warned you from the fire?** A dark server aisle; thick black braided
+cables coil like sleeping serpents between racks, small green current pulses travelling along
+their spines; alarm heat shimmer at the far end; a wall of low flame reflection grows on the
+polished floor. Text: BROOD OF VIPERS towers vertically in segmented, snake-like type; "fire?"
+flares unstable orange-white, heat-distorted.
+
+**06 · You twist the truth / To build your little empire.** A glowing fibre strand twists into a
+helix; zoom out: a skyline of stacked server towers, control stacks, trading terminals and policy
+dashboards, wrapped in graph lines and map overlays like propaganda skins. Text: TWIST THE TRUTH
+coils and misregisters; BUILD YOUR LITTLE EMPIRE stacks in blocks like rack units.
+
+**07 · You honor prophets / That your fathers tried to kill.** A memorial feed wall of giant LED
+screens with sanitised heroic faces ringed in UI laurels and tribute graphics; signal corruption
+exposes archived suppression footage, deletion artefacts and cracked image layers beneath. Text:
+HONOR PROPHETS as official tribute copy; TRIED TO KILL interrupts as a harsh system override.
+
+**08 · Brood of vipers / Do you think I can't see still?** Cable-vipers rise upright from network
+trenches like surveillance cobras; above them a city-scale sensor eye, a giant lidar iris. On "I" a
+stable warm beam drops through the noise and isolates one viper, revealing every hidden cable path.
+Text: BROOD OF VIPERS as a threat classification; I stable and luminous; SEE opens like an iris, holy
+and uncorrupted.
+
+**09 · You strain a gnat / Let the camel through.** A hyper-fine mesh filter catches a tiny
+glitching insect-drone; pull back: a massive approved cargo block (an oversized data container, an
+armoured transport block) passes through the next lane unchecked. Text: STRAIN A GNAT micro-small,
+forensic; LET THE CAMEL THROUGH huge and shameless, clipping through the frame.
+
+**10 · Heavy loads / That you never lift too.** Endless crates of devices, debt ledgers, legal
+packets, biometric dossiers and compliance modules on an automated conveyor; robotic arms assign
+them to anonymous low-level user silhouettes while executive control pods hover above, untouched.
+Text: HEAVY LOADS drops with weight; YOU NEVER LIFT TOO stays elevated and detached, never touching
+the burden.
+
+**11 · Blind guides smile / While the widow pays.** A checkout/donation interface fills the frame
+with a glowing synthetic customer-service face smiling; a blindfold-like glitch band slides over
+its eyes while the total rises; coins, cards and microfees drain into a collection funnel. Text:
+BLIND GUIDES SMILE in pleasant UX type that slowly corrupts; WIDOW PAYS lands hard as a
+thermal-receipt burst.
+
+**12 · You sell the gate / Then you guard the gate.** A sleek access portal in a neon corridor:
+paywall prompts, biometric scans, subscription tiers, authorisation badges; it opens briefly for
+premium clearance, then slams behind a lattice of red laser geometry. Text: SELL THE GATE as
+storefront UI and price tiers; GUARD THE GATE as hard-lock access-denied overlays.
+
+**13 · Brood of vipers / Who warned you from the fire?** The corridor overheats; cable-vipers
+slither up the gate pillars; warning lights pulse; the whole access system glows hotter, judgment
+moving down the circuitry. Text: BROOD OF VIPERS crawls up both frame edges; "fire?" as a thermal
+warning exceeding system limits.
+
+**14 · You kiss the scrolls / But your tongues call God a liar.** Official text treated
+reverently: pristine digital tablets and ceremonial document displays in a glass case; synthetic
+spokesperson faces and talking-head UIs smile beside them while the audio waveform mutates into
+forked lie-signals. Text: YOU KISS THE SCROLLS elegant and reverent; CALL GOD A LIAR tears through
+as a contradiction alert.
+
+**15 · You paint the graves / With your incense and your skill.** A swarm of drone sprayers and
+cleanup bots coats a damaged server block, cracked transit pillar and polluted wall in glossy white
+and branded atmosphere; perfumed aesthetic fog rolls in; corruption pulses beneath. Text: PAINT THE
+GRAVES applied like glossy finish layers; INCENSE floats as vapour type; SKILL as smug
+presentation copy.
+
+**16 · Brood of vipers / Do you think I can't see still?** Cable-vipers flow over the chalice like
+living harnesses; a clean scan beam penetrates it and shows the poisoned interior in x-ray
+cross-section; nearby LED faces freeze, caught. Text: BROOD OF VIPERS as a dossier header; I warm
+and stable; SEE resolves through the x-ray slice.
+
+**17 · You say "we see" / So your darkness stays.** A line of glossy smart visors, AR headsets and
+black mirrored screens in darkness; reflected city lights die one by one until the visor wall is
+black; faint crowd silhouettes behind are guided by dead navigation arrows. Text: WE SEE as smug
+slogan copy; DARKNESS STAYS swallows the frame in signal blackout.
+
+**18 · You say "we're clean" / But your hands still raise.** A sterile white clean-room interface:
+robotic arms, sensor poles and compliance scanners around the chalice in purified water; as the
+system declares itself clean, contamination blooms through the water and fingerprints,
+transaction trails and command prompts overlay the scene. No gloves. Text: WE'RE CLEAN as
+corporate assurance; HANDS STILL RAISE through repeated approve / confirm / authorise gesture icons.
+
+**19 · Silver in your palms / Blood on the floor.** Silver tokens, digital credits, procurement
+chips and payout counters flow into a tray; the reflective floor fills with red signal spill, then
+bloodlike reflection spreading through puddles. Text: SILVER IN YOUR PALMS metallic and seductive;
+BLOOD ON THE FLOOR smears across the reflection with rising distortion.
+
+**20 · You stand in the door / Won't walk in / Or let the poor.** A luminous doorway into a warm
+protected chamber; in front, turnstiles, algorithmic barriers, status tiers, denial prompts and a
+hard-lock scan gate; beyond glass, anonymous silhouettes wait with tin cups, low-battery devices
+and faded IDs. Text: YOU STAND IN THE DOOR vertical threshold text; WON'T WALK IN hard-freezes; OR
+LET THE POOR obstructed by denial overlays and barrier graphics.
+
+**21 · Brood of vipers / Who warned you from the fire?** The whole city-system in judgment: server
+monoliths, access gates, face screens and conduits lit from below by heat and rising flame; three
+massive cable-vipers silhouetted against the glow. Text: the hook huge, near-monumental, but
+digital and glitch-tech.
+
+**22 · Turn your hearts / Let the proud dreams fall and tire.** A control room of stacked
+dashboards, projection maps, campaign screens and predictive models fails: towers of UI windows
+collapse, charts shatter, slogans dim, and a central core light warms for the first time. Text:
+TURN YOUR HEARTS gentler, calmer; PROUD DREAMS as polished campaign copy that loses structural
+integrity.
+
+**23 · A cracked reed bruised / I will never crush or kill.** After the collapse, quiet: in a dim
+warm pocket among the debris, a fragile signal filament (a thin green reed-like cable, a cracked
+antenna) still glows faintly. It is not destroyed; nothing attacks. Text: A CRACKED REED BRUISED
+delicate, almost whispered; I WILL NEVER CRUSH OR KILL stable and compassionate, no glitch.
+
+**24 · But brood of vipers / If you won't bend.** The cable-vipers rigid and upright, wrapped
+round control pylons, access rails and payout columns; synthetic faces nearby freeze in defiance.
+Text: BROOD OF VIPERS classified and severe; IF YOU WON'T BEND stretches across frame like a stress
+test that never yields.
+
+**25 · The stones will speak My will.** The system's own materials testify: concrete walls, server
+housings, floor slabs, pillars and dead screens light up from within; panels crack with white-hot
+light; the environment is the witness. Text: THE STONES WILL SPEAK MY WILL distributed across
+architecture, floor, walls and casings; MY the one stable gold-white word.
+
+**26 · Outro (2:30–2:49).** The chalice again. Warm inner light enters and purges the green poison
+from within; the contamination burns away, leaving clear reflective metal lit from inside. The
+scanline returns and finds nothing false. The LED faces and threat systems in the reflections are
+dark. Industrial, quiet, clean. Text: a restrained caption, "First clean the inside of the cup",
+then MATTHEW 23:26. End on stillness.
