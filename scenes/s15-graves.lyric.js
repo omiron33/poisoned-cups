@@ -35,7 +35,7 @@ export default (P) => ({
     // "liar" (s14) is sung across the cut: held low left, above the LOT note
     carry(ctx, t, P, { y: 1840 });
     const a = outFade(t, P.to - 0.2, P.to);
-    coats(ctx, L1.words, t, { x: 250, y: 1150, px: 300, keep: 3, gap: 1.15, ground: 'dark', alpha: a });
+    coats(ctx, L1.words, t, { x: 250, y: 1150, px: 300, keep: 3, gap: 1.5, ground: 'dark', alpha: a });
     // only the words sung inside this scene; the rest belongs to the next
     const w2 = L2.words.filter((w) => w.start < P.to - 0.5);
     arm(ctx, w2, t, (w, i) => (['incense', 'skill'].includes(keyOf(w.w)) ? redact : flat), { x: 3600, y: 1880, px: 190, align: 'right', maxW: 2600, ground: 'dark', alpha: a });
