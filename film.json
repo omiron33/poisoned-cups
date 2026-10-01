@@ -58,21 +58,24 @@
   },
   {
    "id": "09",
-   "scene": "s09-gnat",
+   "scene": "p09-gnat",
    "from": 56.5167,
-   "to": 63.1333
+   "to": 63.1333,
+   "tier": "premium"
   },
   {
    "id": "10",
-   "scene": "s10-loads",
+   "scene": "p10-loads",
    "from": 63.1333,
-   "to": 68.1333
+   "to": 68.1333,
+   "tier": "premium"
   },
   {
    "id": "11",
-   "scene": "s11-widow",
+   "scene": "p11-widow",
    "from": 68.1333,
-   "to": 73.3333
+   "to": 73.3333,
+   "tier": "premium"
   },
   {
    "id": "12",
@@ -106,9 +109,10 @@
   },
   {
    "id": "17",
-   "scene": "s17-we-see",
+   "scene": "p17-we-see",
    "from": 100.7333,
-   "to": 106.0167
+   "to": 106.0167,
+   "tier": "premium"
   },
   {
    "id": "18",
@@ -124,9 +128,10 @@
   },
   {
    "id": "20",
-   "scene": "s20-door",
+   "scene": "p20-door",
    "from": 116.5,
-   "to": 123.1167
+   "to": 123.1167,
+   "tier": "premium"
   },
   {
    "id": "21",
@@ -142,21 +147,24 @@
   },
   {
    "id": "23",
-   "scene": "s23-reed",
+   "scene": "p23-reed",
    "from": 132.8,
-   "to": 139.2167
+   "to": 139.2167,
+   "tier": "premium"
   },
   {
    "id": "24",
-   "scene": "s24-bend",
+   "scene": "p24-bend",
    "from": 139.2167,
-   "to": 143.4833
+   "to": 143.4833,
+   "tier": "premium"
   },
   {
    "id": "25",
-   "scene": "s25-stones",
+   "scene": "p25-stones",
    "from": 143.4833,
-   "to": 150.0
+   "to": 150.0,
+   "tier": "premium"
   },
   {
    "id": "26",
