@@ -17,30 +17,30 @@ export default (P) => {
   const R = rig(P);
   return {
     textSize: [3840, 2160],
-    shade: 0.4,
+    shade: 0.6,   // screen-fixed words now sit over the lit cracks: a firmer halo
     textPlane(t, cam) { return fullFrame(cam); },
     drawText(ctx, t) {
       carry(ctx, t, P);
       const cam = R.camera(t);
       const a = outFade(t, P.to - 0.1, P.to);
-      L.words.forEach((w, i) => {
-        if (t < w.start - 0.02) return;
-        const s = SURF[i];
-        const isMy = i === 4;
-        const voice = isMy ? voiceOf(w.w) : PLAIN;
-        const size = PX * voice.scale;
-        const mpp = s.h / (size * (isMy ? 0.66 : 0.8));
-        const k = clamp01((t - w.start + 0.02) / 0.08);
-        // the settle gate: a word holds still on screen for 0.3 s after it lands (the camera starts its
-        // next step 0.14 s after the onset), then eases back onto its surface as the camera carries it
-        const hold = isMy ? cam : blendCam(R.camera(w.start + 0.02), cam, ease.inOut3(clamp01((t - w.start - 0.3) / 0.22)));
-        onSurface(ctx, hold, s.c, s.ax, s.ay, mpp, () => {
-          const tw = measure(ctx, w.w, PX, { voice }) - PX * 0.26;
-          const y = size * (isMy ? 0.33 : 0.4);
-          paint(ctx, w.w, -tw / 2, y, PX, { voice, ground: 'dark', alpha: k * a, ink: isMy ? undefined : '255, 246, 234' });
-          // the burn: a white flash on the onset (never on My, which only brightens)
-          const hot = Math.exp(-(t - w.start) * 9) * (isMy ? 0 : 1);
-          if (hot > 0.02) paint(ctx, w.w, -tw / 2, y, PX, { voice, ground: 'dark', ink: '255, 255, 255', alpha: hot * k * a });
+      // placement audit: the words no longer ride the surfaces (the camera's steps carried them); they
+      // hold fixed screen places in the same reading path: THE STONES WILL / SPEAK MY / WILL
+      const ROWS = [[0, 1, 2], [3, 4], [5]], YS = [380, 800, 1840], PXS = [200, 200, 250];
+      ROWS.forEach((row, r) => {
+        const px = PXS[r], gap = px * 0.45;
+        const vs = row.map((i) => (i === 4 ? voiceOf(L.words[i].w) : PLAIN));
+        const ws = row.map((i, j) => measure(ctx, L.words[i].w, px, { voice: vs[j] }) - px * 0.26);
+        let x = 1920 - (ws.reduce((p, q) => p + q, 0) + gap * (row.length - 1)) / 2;
+        row.forEach((i, j) => {
+          const w = L.words[i], isMy = i === 4, voice = vs[j];
+          if (t >= w.start - 0.02) {
+            const k = clamp01((t - w.start + 0.02) / 0.08);
+            paint(ctx, w.w, x, YS[r], px, { voice, ground: 'dark', alpha: k * a, ink: isMy ? undefined : '255, 246, 234' });
+            // the burn: a white flash on the onset (never on My, which only brightens)
+            const hot = Math.exp(-(t - w.start) * 9) * (isMy ? 0 : 1);
+            if (hot > 0.02) paint(ctx, w.w, x, YS[r], px, { voice, ground: 'dark', ink: '255, 255, 255', alpha: hot * k * a });
+          }
+          x += ws[j] + gap;
         });
       });
       note(ctx, 'LOT 25  ·  WITNESS  ·  THE SYSTEM TESTIFIES  ·  LUKE 19:40', 1920, 2010, { px: 38, ground: 'dark', align: 'center', alpha: 0.8 * a * outFade(t, R.on[5] - 0.3, R.on[5]) });

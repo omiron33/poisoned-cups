@@ -46,7 +46,7 @@ export default (P) => {
   return {
     name: 's09-gnat', from: P.from, to: P.to,
     frag: STUDIO_GLSL + CYBER_GLSL + /* glsl */ `
-uniform float uZc, uTear, uAlert;
+uniform float uZc, uTear, uAlert, uFine;
 const vec3 BUGP = vec3(${BUG.join(', ')}) + vec3(0.0, 0.0, 0.0);
 const float LB = ${LANE_B.toFixed(2)};
 // lane A: a slim portal with a hyper-fine mesh stretched across it (plane z = 0)
@@ -57,13 +57,27 @@ float sdPortalA(vec3 p, out int id) {
   float d = min(post, beam); id = 2;
   float bb = sdBox(p - vec3(0.0, 0.93, 0.0), vec3(0.67, 0.9, 0.012));
   if (bb > d || bb > 0.02) return min(d, bb + 0.005);
-  const float S = 0.0045;
-  float gx = (fract(p.x / S) - 0.5) * S, gy = (fract(p.y / S) - 0.5) * S;
-  float wv = 0.0004 * sin(p.x / S * 3.14159) * sin(p.y / S * 3.14159);
-  float wa = length(vec2(gy, p.z - wv)) - 0.00055;
-  float wb = length(vec2(gx, p.z + wv)) - 0.00055;
-  float mesh = max(min(wa, wb), sdBox(p - vec3(0.0, 0.93, 0.0), vec3(0.66, 0.88, 0.05)));
-  if (mesh < d) { d = mesh; id = 3; }
+  float inBox = sdBox(p - vec3(0.0, 0.93, 0.0), vec3(0.66, 0.88, 0.05));
+  // v3: a coarse woven support grid that reads as a mesh from any distance (offset half a cell so
+  // no wire crosses the drone)
+  const float SC = 0.075;
+  vec2 cg = (fract((p.xy - 0.5 * SC) / SC) - 0.5) * SC;
+  float cw = 0.0025 * sin((p.x - 0.5 * SC) / SC * 3.14159) * sin((p.y - 0.5 * SC) / SC * 3.14159);
+  float coarse = min(length(vec2(cg.y, p.z - cw)) - 0.0036, length(vec2(cg.x, p.z + cw)) - 0.0036);
+  coarse = max(coarse, inBox);
+  if (coarse < d) { d = coarse; id = 7; }
+  // the hyper-fine filter mesh, only in the macro: its wires thin to nothing as the camera pulls
+  // back, before they go sub-pixel (so the wide never shows them as noise)
+  if (uFine > 0.001) {
+    const float S = 0.0045;
+    float gx = (fract(p.x / S) - 0.5) * S, gy = (fract(p.y / S) - 0.5) * S;
+    float wv = 0.0004 * sin(p.x / S * 3.14159) * sin(p.y / S * 3.14159);
+    float r = 0.00055 * uFine;
+    float wa = length(vec2(gy, p.z - wv)) - r;
+    float wb = length(vec2(gx, p.z + wv)) - r;
+    float mesh = max(min(wa, wb), inBox);
+    if (mesh < d) { d = mesh; id = 3; }
+  }
   return d;
 }
 // the insect-drone: a pill body, a lens head, four rotor arms, one leg snagged in the wires
@@ -121,6 +135,8 @@ Mat material(int id, vec3 p, vec3 n) {
     return dirty(m, p * 2.0, 0.4);
   }
   if (id == 3) { Mat m = SILVER(); m.rough = 0.25; return m; }
+  // the support weave: brushed steel with a faint alert-magenta glint so it reads against the dark
+  if (id == 7) { Mat m = SILVER(); m.rough = 0.35; m.emit = vec3(0.12, 0.02, 0.08) * uAlert; return m; }
   if (id == 4) {
     Mat m = M(vec3(0.03), 0.12, 1.0);
     vec3 c = floor(p * 1100.0);
@@ -152,12 +168,14 @@ vec3 shade(vec2 fc) {
       uKeyDir: [0.45, 0.9, 0.55], uKeyCol: [3.0, 3.1, 3.5], uKeySize: 0.3,
       uRimA: [3.4, 3.5, 3.9], uRimB: [0.7, 3.2, 1.1],
       uHaze: 0.05, uHazeCol: [0.06, 0.05, 0.08],
-      uZc: -20, uTear: 0, uAlert: 1,
+      uZc: -20, uTear: 0, uAlert: 1, uFine: 1,
     },
     camera: gnatCamera(P),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       u.uZc.value = zc(t);
+      // the fine mesh fades out over the first third of the pull-back
+      u.uFine.value = 1 - ease.inOut3((t - (tLet - 0.3)) / 0.35);
       u.uTear.value = t >= tCam && t < tCam + 0.05 ? 1 : 0;
       u.uAlert.value = 0.55 + 0.45 * (Math.sin(t * 9) > 0 ? 1 : 0.2);
       // the drone's own glow, and the green of the approved lane

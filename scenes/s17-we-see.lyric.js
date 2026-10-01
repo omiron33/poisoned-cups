@@ -37,7 +37,6 @@ export default (P) => {
       if (t >= slogan[0].start) {
         const k = ease.out3((t - slogan[0].start) / 0.3);
         ctx.fillStyle = 'rgba(226, 232, 244, 0.7)'; ctx.fillRect(1920 - 900 * k, 790, 1800 * k, 4);
-        note(ctx, 'SLOGAN 17  ·  APPROVED  ·  VISION PLATFORM', 1920, 862, { px: 34, align: 'center', alpha: 0.75 * k });
       }
       // "So your" at the bottom
       centred(ctx, soYour, t, 1080, 140, { ground: 'dark', alpha: end });

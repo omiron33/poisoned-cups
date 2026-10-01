@@ -34,11 +34,12 @@ const v2 = (a) => `vec2(${a.map((x) => x.toFixed(3)).join(', ')})`;
 // camera keys: close on the pylons, then held steps outward, one per word
 const K = [
   { pos: [0.0, 1.1, 2.45], tg: [0.0, 1.05, -0.4], fov: 44 },
-  { pos: [-0.25, 1.75, 2.9], tg: [-0.5, 1.8, -1.0], fov: 46 },
-  { pos: [0.0, 1.8, 3.0], tg: [0.0, 1.75, -1.0], fov: 46 },
-  { pos: [0.0, 1.7, 3.2], tg: [0.0, 1.5, -1.0], fov: 47 },
-  { pos: [0.0, 2.0, 4.6], tg: [0.0, 0.95, -0.6], fov: 48 },
-  { pos: [0.0, 1.9, 4.3], tg: [0.0, 1.1, -0.8], fov: 48 },
+  // v3: tighter, the screen words high in frame and the pylons filling it below (no dead dark top)
+  { pos: [-0.1, 1.7, 2.2], tg: [-0.12, 1.2, -1.0], fov: 44 },
+  { pos: [0.0, 1.6, 2.3], tg: [0.0, 1.12, -1.0], fov: 44 },
+  { pos: [0.0, 1.5, 2.6], tg: [0.0, 1.02, -1.0], fov: 44 },
+  { pos: [0.0, 1.25, 3.9], tg: [0.0, 0.8, -0.8], fov: 44 },
+  { pos: [0.0, 1.2, 3.75], tg: [0.0, 0.8, -0.8], fov: 44 },
 ];
 
 export function rig(P) {

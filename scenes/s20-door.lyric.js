@@ -8,6 +8,8 @@ import { paint, measure, strike, volt, cascade, note, outFade, clamp01, ease, sp
 import { cameraPlane } from '/engine.js';
 import { lines20 } from './s20-door.js';
 
+const SCRIM = 0.65;   // s after the cut when the black wall is behind the jamb column
+
 export default (P) => {
   const [L1, L2, L3] = lines20(P);
   const tWont = L2.words[0].start, tOr = L3.words[0].start;
@@ -16,36 +18,54 @@ export default (P) => {
     textSize: [3840, 2160], shade: 0.1,
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
-      carry(ctx, t, P, { x: 240, y: 1960 });
+      // the film cuts in on s19's door light (the camera pulls back out of it), so the carried line
+      // is set in s19's blood red for the light ground, and the jamb column gets a soft dark scrim
+      // until the black wall has come round behind it
+      carry(ctx, t, P, { x: 240, y: 1960, ground: 'light' });
+      const scrim = clamp01((t - P.from - 0.03) / 0.08) * (1 - clamp01((t - P.from - SCRIM) / 0.2));
+      // while the door light still fills the frame the jamb words are set in dark ink instead of a scrim
+      if (false) {
+        ctx.save(); ctx.translate(1010, 1560); ctx.scale(0.62, 0.55);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 720);
+        g.addColorStop(0, `rgba(10, 9, 14, ${(0.9 * scrim).toFixed(3)})`);
+        g.addColorStop(0.55, `rgba(10, 9, 14, ${(0.86 * scrim).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(10, 9, 14, 0)');
+        ctx.fillStyle = g; ctx.fillRect(-720, -720, 1440, 1440);
+        ctx.restore();
+      }
       const end = outFade(t, P.to - 0.15, P.to);
       const shotA = outFade(t, tOr - 0.15, tOr);
-      // 1 · up the left jamb: one word per row, stacked from the floor up, set flush right against
+      // the jamb stack leaves once WON'T has frozen (so there is only one IN on screen), and the
+      // doorway box holds to the cut (IN must read 0.3 s past its end)
+      const jamb = shotA * outFade(t, tWont + 0.25, tWont + 0.45);
+      const door = outFade(t, tOr - 0.04, tOr);
+      // 1 · down the left jamb: one word per row, reading top to bottom, set flush right against
       //     a hairline rule on the jamb (each word stays horizontal so it reads cleanly)
-      if (shotA > 0.002) {
-        const px = 130, lead = px * 1.32, xr = 1190;
+      if (jamb > 0.002) {
+        const px = 165, lead = px * 1.3, xr = 1190;   // IN large enough to read
         L1.words.forEach((w, i) => {
           const wd = measure(ctx, w.w, px) - px * 0.26;
-          cascade(ctx, w, t, xr - wd, 1720 - i * lead, px, { alpha: shotA });
+          cascade(ctx, w, t, xr - wd, 1720 - (L1.words.length - 1 - i) * lead, px, scrim > 0.5 ? { alpha: jamb, ground: 'light', ink: '16, 14, 20' } : { alpha: jamb });   // placement audit: top-down, so YOU is read first
         });
         const k = ease.out3((t - L1.words[0].start + 0.1) / 0.6);
         const top = 1720 - (L1.words.length - 1) * lead - px;
-        ctx.fillStyle = `rgba(238, 242, 250, ${(0.6 * shotA).toFixed(3)})`; ctx.fillRect(xr + 50, 1740 - (1740 - top) * k, 3, (1740 - top) * k);
-        if (t > L1.words[0].start) note(ctx, 'OCCUPANT 1', xr, 1830, { px: 32, alpha: 0.8 * shotA, align: 'right' });
+        ctx.fillStyle = `rgba(238, 242, 250, ${(0.6 * jamb).toFixed(3)})`; ctx.fillRect(xr + 50, 1740 - (1740 - top) * k, 3, (1740 - top) * k);
+        if (t > L1.words[0].start) note(ctx, 'OCCUPANT 1', xr, 1830, { px: 32, alpha: 0.8 * jamb, align: 'right' });
       }
       // 2 · frozen in the doorway, dark ink on its light
-      if (t >= tWont - 0.02 && shotA > 0.002) {
+      if (t >= tWont - 0.02 && door > 0.002) {
         const cx = 1920;
         const w1 = L2.words[0], rest = L2.words.slice(1);
         const px1 = 230, px2 = 190;
         const a1 = measure(ctx, w1.w, px1) - px1 * 0.26;
-        volt(ctx, w1, t, cx - a1 / 2, 900, px1, { ground: 'light', alpha: shotA });
+        volt(ctx, w1, t, cx - a1 / 2, 900, px1, { ground: 'light', alpha: door });
         const a2 = rest.reduce((s, w) => s + measure(ctx, w.w, px2), 0) - px2 * 0.26;
         let x = cx - a2 / 2;
-        for (const w of rest) { volt(ctx, w, t, x, 1190, px2, { ground: 'light', alpha: shotA }); x += measure(ctx, w.w, px2) + px2 * 0.12; }
+        for (const w of rest) { volt(ctx, w, t, x, 1190, px2, { ground: 'light', alpha: door }); x += measure(ctx, w.w, px2) + px2 * 0.12; }
         const k = clamp01((t - tWont) / 0.06);
-        ctx.strokeStyle = `rgba(16, 16, 22, ${(0.9 * k * shotA).toFixed(3)})`; ctx.lineWidth = 5;
+        ctx.strokeStyle = `rgba(16, 16, 22, ${(0.9 * k * door).toFixed(3)})`; ctx.lineWidth = 5;
         ctx.strokeRect(cx - 400, 610, 800, 680);
-        note(ctx, 'FROZEN  ' + (t - tWont).toFixed(2).padStart(5, '0'), cx - 380, 1360, { px: 32, ground: 'light', alpha: k * shotA, color: '16, 16, 22' });
+        note(ctx, 'FROZEN  ' + (t - tWont).toFixed(2).padStart(5, '0'), cx - 380, 1360, { px: 32, ground: 'light', alpha: k * door, color: '16, 16, 22' });
       }
       // 3 · the low cut: on the dark wall left of the door, a barrier arm comes down over it
       if (t >= tOr - 0.02) {

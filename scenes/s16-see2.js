@@ -12,6 +12,15 @@ import { CUP_GLSL } from '/song/lib/x-cup.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
 import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-a.js';
 
+// v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
+// ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut
+const settleIn = (cam, t, t0, amt = 0.05, dur = 0.6) => {
+  const x = (t - t0) / dur;
+  if (x >= 1) return cam;
+  const k = 1 - ease.inOut3(Math.max(0, x));
+  return { ...cam, pos: cam.pos.map((v, i) => v + (v - cam.target[i]) * amt * k) };
+};
+
 const CUP = [0.0, 0.9, 0.0];
 export const lines16 = (P) => linesAt(P.from - 0.6, 'Brood of vipers', 'Do you think');
 
@@ -110,7 +119,7 @@ vec3 shade(vec2 fc) {
       uKeyCol: [2.4, 2.5, 2.8], uExpo: 1.15,
       uBeam: [0, 0, 0.55, 0], uXray: 0, uPour: 0.5,
     },
-    camera,
+    camera: (t) => settleIn(camera(t), t, P.from),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       const b = beamAt(t);

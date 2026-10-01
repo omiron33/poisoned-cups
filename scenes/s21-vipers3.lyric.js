@@ -63,16 +63,11 @@ export default (P) => {
           ctx.font = v.font(size); ctx.letterSpacing = `${v.track * size}px`;
           const lw = ctx.measureText(s.replace(/[?]/g, '')).width; ctx.letterSpacing = '0px';
           raster(ctx, fx - 40, top - 20, lw + 40, size * 0.95, 22, 0.8);
-          // the temperature scale beside it
-          const sx = fx + fw + 150;
-          if (sx < 3500) {
-            const temps = ['1400°', '1100°', '800°', '500°'];
-            temps.forEach((tt, i) => note(ctx, tt, sx, top + 60 + i * ((fy - top - 60) / 3), { px: 38, alpha: 0.85 * out * clamp01(u / 0.15), color: '255, 220, 190' }));
-          }
+          // (v3: no temperature scale beside FIRE: the one annotation is the grid tag)
         }
       }
       // the grid tag only over the question (over the hook it sat on top of BROOD)
-      if (gone <= 0) note(ctx, 'CITY GRID  ·  ALL SECTORS  ·  CONTAINMENT: NONE  ·  MATT 23:33', 240, 215, { px: 36, alpha: 0.85 * out });
+      if (gone <= 0) note(ctx, 'CITY GRID  ·  CONTAINMENT: NONE  ·  MATT 23:33', 240, 190, { px: 36, alpha: 0.85 * out });
     },
   };
 };

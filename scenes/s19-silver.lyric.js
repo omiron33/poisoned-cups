@@ -42,10 +42,10 @@ function bled(ctx, w, t, x, y, px, alpha, smear) {
     const h = px * 0.75, rows = 14;
     for (let i = 0; i < rows; i++) {
       const f = i / rows;
-      const dx = Math.sin(t * 7 + i * 0.9) * px * 0.05 * smear * (1 + f * 2) + smear * f * px * 0.3;
+      const dx = 0;   // placement audit: the reflection is still (no ripple or smear drift)
       ctx.save();
       ctx.beginPath(); ctx.rect(x - px, y + 14 + f * h, adv + px * 3, h / rows + 1); ctx.clip();
-      ctx.translate(dx, y + 14); ctx.scale(1, -(1 + smear * 0.6)); ctx.translate(0, -y);
+      ctx.translate(dx, y + 14); ctx.scale(1, -1.2); ctx.translate(0, -y);
       paint(ctx, w.w, x, y, px, { ground: 'light', ink: BLOOD, alpha: a * k * 0.3 * (1 - f) });
       ctx.restore();
     }
@@ -57,7 +57,7 @@ export default (P) => {
   const [L1, L2] = lines19(P);
   const tB = L2.words[0].start;
   return {
-    textSize: [3840, 2160], shade: 0.45,   // a pale lift round the dark words
+    textSize: [3840, 2160], shade: 0.65,   // a pale lift round the dark words
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
       carry(ctx, t, P, { x: 260, y: 1960, ground: 'light' });
@@ -67,9 +67,9 @@ export default (P) => {
       const a1b = outFade(t, tB + 0.17, tB + 0.3);
       if (a1b > 0.002) {
         metal(ctx, L1.words[0], t, 240, 560, 330, a1);
-        flow(ctx, L1.words.slice(1), t, { x: 250, y: 860, px: 170, ground: 'light', alpha: a1b });
+        flow(ctx, L1.words.slice(1), t, { x: 250, y: 900, px: 200, ground: 'light', alpha: a1b, rise: 0 });   // IN large and still from its onset
         const paid = Math.floor(1000 * Math.max(0, t - L1.words[0].start) ** 1.6 * 37);
-        if (t > L1.words[0].start) note(ctx, 'PAYOUT  ' + paid.toLocaleString('en-US').padStart(9, ' ') + ' CR', 250, 1010, { px: 34, ground: 'light', alpha: 0.9 * a1 });
+        if (t > L1.words[0].start) note(ctx, 'PAYOUT  ' + paid.toLocaleString('en-US').padStart(9, ' ') + ' CR', 250, 1060, { px: 34, ground: 'light', alpha: 0.9 * a1 });
       }
       // BLOOD, and its reflection smearing as the spill runs
       const smear = ease.inOut3((t - tB - 0.3) / 2.2);

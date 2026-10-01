@@ -16,7 +16,9 @@ export const lines20 = (P) => linesAt(P.from - 0.5, 'You stand in the door', 'Wo
 export const camera20 = (P) => {
   const [, L2, L3] = lines20(P);
   const tWont = L2.words[0].start, tOr = L3.words[0].start;
-  return (t) => {
+  const OPEN = 1.7;   // s19 ends inside the door light; s20 opens there and pulls back out of it
+  const O = { pos: [0, 1.3, -0.42], target: [0, 1.32, -1.6] };
+  const shot = (t) => {
     if (t < tOr) {
       // square on to the door from the barrier line, pushing in; on "Won't" the push is caught by a
       // spring and held (a hard stop that still settles)
@@ -27,6 +29,13 @@ export const camera20 = (P) => {
     // low, behind the silhouettes, looking up at the door; a slow creep
     const u = t - tOr;
     return orbit(t, { target: [0.05, 1.05, 0], yaw: -0.06 + 0.008 * u, pitch: 0.01 + 0.004 * u, dist: 9.2 - 0.16 * u, fov: 34, drift: 0.003 });
+  };
+  return (t) => {
+    const c = shot(t);
+    const k = ease.inOut3(Math.pow(clamp((t - P.from) / OPEN, 0, 1), 0.75));
+    if (k >= 1 || t >= tOr) return c;
+    const m = (a, b) => a.map((v, i) => v + (b[i] - v) * k);
+    return { ...c, pos: m(O.pos, c.pos), target: m(O.target, c.target) };
   };
 };
 

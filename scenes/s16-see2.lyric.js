@@ -2,8 +2,8 @@
 // (DOSSIER 16 · THREAT CLASS: VIPER) and the words scanned in under it in heavy magenta. The
 // question sits low on the left, small machine-white words on one baseline, until "I" arrives in
 // gold-white Garamond, large, stable, lit; "see" follows in the same voice, revealed top-down by
-// the falling light in 0.08 s. Neither divine word is ever glitched. A mono tag under the hook
-// notes the faces freezing when "see" lands.
+// the falling light in 0.08 s. Neither divine word is ever glitched. A mono tag in the top-right
+// margin notes the faces freezing when "see" lands.
 import { linesAt, arm, scan, paint, measure, note, outFade, keyOf, clamp01, ease, VOICES } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
 import { lyrics } from '/song/lib/look.js';
@@ -52,21 +52,22 @@ export default (P) => {
   const tSee = L2.words.find((w) => /^see/i.test(w.w)).start;
   return {
     textSize: [3840, 2160],
-    shade: 0.45,
+    shade: 0.7,
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
       carryWide(ctx, t, P);   // carry(ctx, t, P) with wider spacing
       const out = outFade(t, P.to - 0.3, P.to - 0.02);
       header(ctx, t, L1.words[0].start, 250, 660, 200, 'DOSSIER 16  ·  THREAT CLASS: VIPER', out);
       arm(ctx, L1.words, t, scan, { x: 250, y: 660, px: 200, maxW: 2000, ground: 'dark', alpha: out });
-      if (t >= tSee) note(ctx, 'FACES 03  ·  STATUS: FROZEN', 250, 850, { px: 40, alpha: 0.85 * out * clamp01((t - tSee) / 0.15), color: '255, 120, 190' });
+      if (t >= tSee) note(ctx, 'FACES 03  ·  STATUS: FROZEN', 3590, 250, { px: 40, align: 'right', alpha: 0.85 * out * clamp01((t - tSee) / 0.15), color: '255, 120, 190' });
       // the question, low left
       let x = 250;
       const y = 1880;
       for (const w of L2.words) {
         const k = keyOf(w.w);
         if (k === 'i') { x += 10; x += descend(ctx, w, t, x, y, 180, { ground: 'dark', alpha: out }); x += 30; continue; }
-        if (k.startsWith('see')) { x += 50; x += descend(ctx, w, t, x, y, 400, { ground: 'dark', alpha: out, voice: VOICES.divine }); x += 30; continue; }
+        if (k.startsWith('see')) { x += 150;   // clear room: SEE revealing beside CAN'T must not read as CAN'T moving
+          x += descend(ctx, w, t, x, y, 400, { ground: 'dark', alpha: out, voice: VOICES.divine }); x += 30; continue; }
         if (t >= w.start - 0.02) paint(ctx, w.w, x, y, 120, { ground: 'dark', alpha: out * clamp01((t - w.start + 0.02) / 0.06) });
         x += measure(ctx, w.w, 120);
       }

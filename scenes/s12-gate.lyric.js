@@ -24,8 +24,7 @@ function card(ctx, t, t0, { x, y, w, h, tier, price, badge, locked }) {
   ctx.fillStyle = locked ? 'rgba(160, 160, 176, 1)' : 'rgba(226, 232, 244, 1)';
   ctx.fillText(price, x + dx + 36, y + 162);
   ctx.letterSpacing = '0px';
-  if (locked) note(ctx, 'REVOKED', x + dx + w - 36, y + 70, { px: 30, align: 'right', alpha: 1, color: '255, 92, 170' });
-  else if (badge) note(ctx, badge, x + dx + w - 36, y + 70, { px: 30, align: 'right', alpha: 1, color: '150, 255, 110' });
+  // (v3: no REVOKED / CLEARED corner badges: the magenta frame and the lock panel say it)
   ctx.restore();
 }
 
@@ -63,8 +62,7 @@ export default (P) => ({
       ctx.fillStyle = `rgba(20, 4, 12, ${(0.88 * out).toFixed(3)})`;
       ctx.fillRect(-360, -170, 720, 330);
       ctx.strokeStyle = `rgba(255, 92, 170, ${out.toFixed(3)})`; ctx.lineWidth = 6; ctx.strokeRect(-360, -170, 720, 330);
-      note(ctx, 'ACCESS DENIED', 0, -40, { px: 58, align: 'center', alpha: out, color: '255, 92, 170' });
-      note(ctx, 'CLEARANCE: NONE · 0x403', 0, 60, { px: 30, align: 'center', alpha: out, color: '255, 180, 214' });
+      note(ctx, 'ACCESS DENIED', 0, 20, { px: 58, align: 'center', alpha: out, color: '255, 92, 170' });
       ctx.restore();
     }
     // the hard-lock band across the frame behind the second line

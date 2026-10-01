@@ -27,15 +27,11 @@ export default (P) => ({
       if (u > 0) {
         const k = clamp01(u / 0.07);
         const dy = -(1 - k * k) * 420;             // accelerating fall, no bounce
-        paint(ctx, w.w, x, y + dy, px, { alpha: fade * clamp01(k * 3) });
+        paint(ctx, w.w, x, y + dy, px, { alpha: fade * clamp01(k * 3) * (1 - 0.55 * clamp01((t - (LN.words[0].start - 0.1)) / 0.25)) });   // dims once line 2 begins
       }
       x += adv;
     }
-    const tLoads = LH.words[1].start;
-    if (t > tLoads) {
-      const kg = Math.round(4200 * ease.out3((t - tLoads) / 0.5));
-      note(ctx, `LOAD ${kg.toLocaleString('en-US')} KG  ·  ASSIGNED TO USER 0417`, x + 70, y - 40, { px: 40, color: '150, 255, 110', alpha: 0.9 * fade });
-    }
+    // (v3: the LOAD readout over HEAVY LOADS is gone; the one annotation is CONTACT NONE)
     // YOU NEVER LIFT TOO: high, light, detached
     const lpx = 150, ly = 640, xr = 3600;
     const claim = VOICES.claim;

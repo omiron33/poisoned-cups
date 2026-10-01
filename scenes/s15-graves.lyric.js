@@ -42,7 +42,7 @@ function vapour(ctx, w, t, x, y, px, o) {
   }
   return adv;
 }
-// PITCH: SKILL on a keynote card: a thin rounded frame, a small mono tag above it
+// PITCH: SKILL on a keynote card: a thin rounded frame
 function pitch(ctx, w, t, x, y, px, o) {
   const adv = measure(ctx, w.w, px, o), wd = adv - px * 0.26;
   const u = t - w.start + 0.02;
@@ -50,10 +50,7 @@ function pitch(ctx, w, t, x, y, px, o) {
   const k = ease.out3(u / 0.08), a = (o.alpha ?? 1) * k;
   ctx.strokeStyle = `rgba(226, 232, 244, ${(0.7 * a).toFixed(3)})`; ctx.lineWidth = 4;
   ctx.beginPath(); ctx.roundRect(x - px * 0.35, y - px * 1.05, wd + px * 0.7, px * 1.45, px * 0.2); ctx.stroke();
-  ctx.font = `800 ${Math.round(px * 0.2)}px "JetBrains Mono"`; ctx.letterSpacing = `${px * 0.03}px`;
-  ctx.fillStyle = `rgba(255, 92, 170, ${a.toFixed(3)})`;
-  ctx.fillText('SLIDE 15/15  ·  FLAWLESS', x - px * 0.35, y - px * 1.25);
-  ctx.letterSpacing = '0px';
+  // (v3: no SLIDE tag above the card: it sat against INCENSE's row)
   paint(ctx, w.w, x, y, px, { ...o, alpha: a });
   return adv;
 }
@@ -76,6 +73,6 @@ export default (P) => ({
       let x = 3590 - total;
       ws.forEach((w, j) => { if (fns[j] === pitch) x += px * 0.5; x += fns[j](ctx, w, t, x, r === 0 ? 1640 : 1930, px, { ground: 'dark', alpha: a }); });
     });
-    note(ctx, 'LOT 15  ·  REFINISH  ·  GLOSS WHITE  ·  2 COATS  ·  MATT 23:27', 250, 1990, { px: 38, ground: 'dark', rule: 640, alpha: 0.8 * a * outFade(t, P.to - 0.5, P.to - 0.35) });
+    note(ctx, 'LOT 15  ·  GLOSS WHITE  ·  2 COATS', 250, 1990, { px: 38, ground: 'dark', rule: 640, alpha: 0.8 * a * outFade(t, P.to - 0.5, P.to - 0.35) });
   },
 });

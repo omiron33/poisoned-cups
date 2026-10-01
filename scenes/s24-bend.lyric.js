@@ -15,7 +15,7 @@ export default (P) => {
   const L = 240, R = 3600;
   return {
     textSize: [3840, 2160],
-    shade: 0.55,
+    shade: 0.85,   // a firmer backing: the pillars moving behind WON'T read as the word moving
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
       // "kill" (s23) is sung across the cut: bottom left is taken by the stress line, so top left
@@ -55,12 +55,13 @@ export default (P) => {
       }
       // BUT, then the hook
       const bpx = 130, hpx = 290;
+      const dimH = out * (1 - 0.55 * clamp01((t - L2.words[0].start + 0.05) / 0.2));   // previous line steps back
       let hw = 0; for (const w of hook) hw += measure(ctx, w.w, hpx);
       hw -= hpx * 0.26;
       const bw = measure(ctx, but.w, bpx) - bpx * 0.26;
-      scan(ctx, but, t, R - bw, 520, bpx, { ground: 'dark', alpha: out });
+      scan(ctx, but, t, R - bw, 520, bpx, { ground: 'dark', alpha: dimH });
       let x = R - hw;
-      for (const w of hook) x += fracture(ctx, w, t, x, 900, hpx, { ground: 'dark', alpha: out, ink: '240, 244, 252' });
+      for (const w of hook) x += fracture(ctx, w, t, x, 900, hpx, { ground: 'dark', alpha: dimH, ink: '240, 244, 252' });
       // the stress line: tracked so the whole line spans the frame, positions fixed from the start
       const px = 250, words = L2.words;
       const size = (w) => Math.round(px * voiceOf(w.w).scale);
@@ -74,7 +75,7 @@ export default (P) => {
       gap = Math.min(px * 0.8, gap + (need - perChar * words.reduce((a, w) => a + chars(w) * size(w), 0)) / Math.max(1, words.length - 1));   // wide, but IF still reads as part of the line
       let sx = L;
       words.forEach((w, i) => {
-        const v = { ...voiceOf(w.w), track: perChar };
+        const v = { ...voiceOf(w.w), track: chars(w) <= 2 ? 0 : perChar };   // IF untracked: it must read as one word
         const wd = measure(ctx, w.w, px, { voice: v }) - px * 0.26;
         scan(ctx, w, t, sx, 1790, px, { ground: 'dark', alpha: out, voice: v });
         sx += wd + gap + perChar * size(w) * 0;
@@ -86,9 +87,7 @@ export default (P) => {
         ctx.fillStyle = `rgba(230, 226, 240, ${(0.7 * k * out).toFixed(3)})`;
         ctx.fillRect(L, 1870, (R - L) * k, 3);
         for (let i = 0; i <= 20; i++) ctx.fillRect(L + (R - L) * i / 20, 1858, 3, i % 5 ? 12 : 24);
-        const load = Math.round(100 + 160 * ease.out3((t - u0) / 1.4));
-        note(ctx, `LOAD ${Math.max(100, load)}%  ·  YIELD: NONE`, L, 1960, { px: 40, alpha: 0.9 * k * out });
-        note(ctx, 'TENSILE TEST  ·  MATT 23:33', R, 1960, { px: 40, align: 'right', alpha: 0.8 * k * out });
+        // (v3: no LOAD / TENSILE readouts under the gauge: they sat against the stress line)
       }
     },
   };

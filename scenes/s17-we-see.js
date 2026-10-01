@@ -8,6 +8,15 @@ import { grade, rgb, linesAt, clamp01, ease, mix } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { XF_GLSL } from '/song/lib/x-f.js';
 
+// v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
+// ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut
+const settleIn = (cam, t, t0, amt = 0.05, dur = 0.6) => {
+  const x = (t - t0) / dur;
+  if (x >= 1) return cam;
+  const k = 1 - ease.inOut3(Math.max(0, x));
+  return { ...cam, pos: cam.pos.map((v, i) => v + (v - cam.target[i]) * amt * k) };
+};
+
 export const VISORS = [[-1.55, 0.25], [-0.95, 0.05], [-0.33, 0.2], [0.3, 0.0], [0.92, 0.18], [1.52, -0.02]];
 
 export function rig(P) {
@@ -112,7 +121,7 @@ vec3 shade(vec2 fc) {
       uP1: [0.0, 2.2, 1.6], uP1c: [0.5, 0.5, 0.7],
       uLive: [1, 1, 1, 1, 1, 1], uNav: 1, uCrowd: 1,
     },
-    camera: R.camera,
+    camera: (t) => settleIn(R.camera(t), t, P.from),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       // the lights die one by one from "see", the last on "darkness"

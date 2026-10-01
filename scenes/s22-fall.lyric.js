@@ -59,10 +59,11 @@ export default (P) => ({
     // the mercy italic set in capitals: in lower case the italic h of "hearts" read as a b
     const MERCY = { ...VOICES.mercy, caps: true, track: 0.05 };
     const mpx = 170;
+    const dimT = 1 - 0.55 * clamp01((t - LP.words[0].start + 0.05) / 0.2);   // the previous line steps back
     let x = 250;
     for (const w of LT.words) {
       const s = arrive(w, t, 0.1);
-      if (s.a > 0.002) paint(ctx, w.w, x, 560 + (1 - s.k) * mpx * 0.15, mpx, { alpha: s.a * fade, voice: MERCY });
+      if (s.a > 0.002) paint(ctx, w.w, x, 560 + (1 - s.k) * mpx * 0.15, mpx, { alpha: s.a * fade * dimT, voice: MERCY });
       x += measure(ctx, w.w, mpx, { voice: MERCY }) + mpx * 0.1;
     }
     // the campaign banner
@@ -90,8 +91,7 @@ export default (P) => ({
     let wx = bx;
     words.forEach((w, i) => {
       const adv = measure(ctx, w.w, bpx, { voice: claim });
-      if (c <= 0) load(ctx, w, t, wx, by, bpx, { voice: claim, alpha: fade });
-      else sagWord(ctx, w, wx, by, bpx, c, i * 17 + 3, fade, claim);
+      load(ctx, w, t, wx, by, bpx, { voice: claim, alpha: fade });   // placement audit: the words stay put; only the frame fails
       wx += adv + gap;
     });
     // FALL AND TIRE

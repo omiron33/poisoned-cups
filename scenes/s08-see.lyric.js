@@ -4,8 +4,10 @@
 // bottom; the I is set huge in gold-white at the left, steady and luminous, and SEE opens like an
 // iris beside the light: a gold ring dilates and the word is revealed through it, whole, never
 // glitched. At the end the classification reads CLASS VOID.
-import { linesAt, dossier, misreg, strike, scan, paint, measure, note, outFade, keyOf, clamp01, ease, carry, VOICES } from '/song/lib/type.js';
+import { linesAt, dossier, arm, misreg, strike, scan, paint, measure, note, outFade, keyOf, clamp01, ease, carry, VOICES } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
+
+const I_SANS = { ...VOICES.divine, font: (px) => `700 ${px}px "Inter Tight"`, track: 0, scale: 1, glow: undefined };
 
 export default (P) => {
   const [L1, L2] = linesAt(P.from - 0.6, 'Brood of vipers', 'Do you think');
@@ -21,37 +23,47 @@ export default (P) => {
       const out = outFade(t, P.to - 0.3, P.to);
       // the classification
       const void_ = t >= see.start;
-      dossier(ctx, L1.words, t, { x: 250, y: 560, px: 200, head: 'THREAT CLASS 4  ·  BROOD  ·  06 UNITS', weapon: misreg, ground: 'dark', maxW: 2200, alpha: out });
-      if (t >= L1.words[2].start) note(ctx, void_ ? 'STATUS: SEEN' : 'STATUS: UNOBSERVED', 250, 690, { px: 40, alpha: 0.85 * out, color: void_ ? '255, 226, 170' : '230, 170, 220' });
-      // the question, small, along a hairline at the bottom right, with gaps for I and SEE
-      let sx = 2000;   // right of the rising cable, which crosses x≈2000–2400 at the end
-      const qpx = 104;
+      // the threat-class header, lifted clear of the caps (lib dossier() sets its bar touching them),
+      // then the words laid out exactly as dossier() lays them
+      if (t >= L1.words[0].start - 0.4) {
+        const px = 200, k = ease.out3((t - (L1.words[0].start - 0.4)) / 0.25), head = 'THREAT CLASS 4  ·  BROOD  ·  06 UNITS';
+        ctx.font = `800 ${Math.round(px * 0.26)}px "JetBrains Mono"`; ctx.letterSpacing = `${px * 0.05}px`;
+        const hw = ctx.measureText(head).width;
+        ctx.fillStyle = `rgba(150, 255, 110, ${(0.9 * k * out).toFixed(3)})`;
+        ctx.fillRect(250, 560 - px * 1.72, (hw + px * 0.4) * k, px * 0.34);
+        ctx.fillStyle = `rgba(8, 10, 12, ${(k * out).toFixed(3)})`;
+        ctx.fillText(head, 250 + px * 0.12, 560 - px * 1.47);
+        ctx.letterSpacing = '0px';
+        arm(ctx, L1.words, t, misreg, { x: 250, y: 560, px, ground: 'dark', maxW: 2200, alpha: out * (1 - 0.55 * clamp01((t - (L2.words[0].start - 0.1)) / 0.25)) });
+      }
+      // the question (placement pass): one row in reading order, low across the frame. The small
+      // words scan in; the I is set huge in gold-white in its place in the row, steady; SEE opens
+      // like an iris in its place, whole, never glitched. Nothing moves once it has landed.
+      const qpx = 150, ipx = 560, spx = 380, Y = 1560;
+      const sw = see ? measure(ctx, see.w, spx, { voice: VOICES.divine }) - spx * 0.26 : 0;
+      const R = sw * 0.58 + 50;
+      const adv = (w) => (w === I ? measure(ctx, w.w, ipx) - ipx * 0.26 + qpx * 0.75
+        : w === see ? R * 2 + qpx * 0.25
+        : measure(ctx, w.w, qpx));
+      let sx = 250;
       for (const w of L2.words) {
-        if (w === I || w === see) {
-          // a small gold slot mark where the big word belongs
-          if (t >= w.start) { ctx.fillStyle = `rgba(255, 226, 170, ${(0.8 * out).toFixed(3)})`; ctx.fillRect(sx, 1960 - qpx * 0.35, qpx * 0.5, 4); }
-          sx += qpx * 0.8;
-          continue;
-        }
-        sx += scan(ctx, w, t, sx, 1960, qpx, { ground: 'dark', alpha: out });
+        if (w === I) {
+          if (t >= w.start - 0.02) paint(ctx, w.w, sx + qpx * 0.2, Y, ipx, { ground: 'dark', alpha: out * clamp01((t - w.start + 0.02) / 0.08) });
+        } else if (w === see) {
+          if (t >= w.start - 0.02) {
+            const u = t - see.start + 0.02;
+            const k = ease.out5(u / 0.08);
+            const cx = sx + R + qpx * 0.1, cy = Y - spx * 0.05;
+            ctx.strokeStyle = `rgba(255, 226, 170, ${(0.85 * out).toFixed(3)})`; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.arc(cx, cy - spx * 0.32, R * (0.25 + 0.75 * k), 0, Math.PI * 2); ctx.stroke();
+            ctx.save(); ctx.beginPath(); ctx.arc(cx, cy - spx * 0.32, R * k, 0, Math.PI * 2); ctx.clip();
+            paint(ctx, see.w, cx - sw / 2, cy, spx, { ground: 'dark', alpha: out, voice: VOICES.divine });
+            ctx.restore();
+          }
+        } else scan(ctx, w, t, sx, Y, qpx, { ground: 'dark', alpha: out });
+        sx += adv(w);
       }
-      if (t >= L2.words[0].start) { ctx.fillStyle = `rgba(230, 226, 240, ${(0.55 * out).toFixed(3)})`; ctx.fillRect(2000, 1995, 1600 * ease.out3((t - L2.words[0].start) / 0.5), 3); }
-      // I: huge, gold-white, steady
-      if (I && t >= I.start - 0.02) paint(ctx, I.w, 360, 1400, 900, { ground: 'dark', alpha: out * clamp01((t - I.start + 0.02) / 0.08) });
-      // SEE: an iris dilates and the word is seen through it
-      if (see && t >= see.start - 0.02) {
-        const u = t - see.start + 0.02;
-        const k = ease.out5(u / 0.08);
-        const spx = 420, sw = measure(ctx, see.w, spx, { voice: VOICES.divine }) - spx * 0.26;
-        const cx = 2900, cy = 1200, R = sw * 0.58 + 50;
-        ctx.strokeStyle = `rgba(255, 226, 170, ${(0.85 * out).toFixed(3)})`; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.arc(cx, cy - spx * 0.32, R * (0.25 + 0.75 * k), 0, Math.PI * 2); ctx.stroke();
-        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy - spx * 0.32, R * k, 0, Math.PI * 2); ctx.clip();
-        paint(ctx, see.w, cx - sw / 2, cy, spx, { ground: 'dark', alpha: out, voice: VOICES.divine });
-        ctx.restore();
-      }
-      if (t >= tOut) note(ctx, 'PATHS EXPOSED  ·  GRID 1:1', 3590, 250, { px: 40, align: 'right', alpha: 0.85 * out * clamp01((t - tOut) / 0.2) });
-      note(ctx, 'MATT 23:33', 3590, 330, { px: 40, align: 'right', alpha: 0.7 * out });
+      note(ctx, 'MATT 23:33', 3590, 250, { px: 40, align: 'right', alpha: 0.7 * out });
     },
   };
 };

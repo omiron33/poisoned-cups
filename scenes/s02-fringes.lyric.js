@@ -27,11 +27,14 @@ export default (P) => {
         const drop = spring(t, w.start - 0.28, 0.35, 0.25);
         if (t < w.start - 0.28) return;
         // sway only after the word has printed and held (settle gate), small and slow
-        const sw = 0.018 * Math.sin((t - w.start) * 2.4 + i * 1.3) * clamp01((t - w.start - 0.35) / 0.8);
+        // (placement pass: no sway; a landed word holds still)
+        const sw = 0;
+        // once line 2 begins, the cards dim back so the current line dominates
+        const dim = 1 - 0.5 * clamp01((t - (L2.words[0].start - 0.1)) / 0.25);
         const y0 = top - (1 - drop) * (cardH + top + 60);
         ctx.save();
         ctx.translate(x, 0); ctx.rotate(sw);
-        ctx.globalAlpha = out;
+        ctx.globalAlpha = out * dim;
         // the lanyard line
         ctx.strokeStyle = 'rgba(190, 160, 240, 0.85)'; ctx.lineWidth = 5;
         ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, y0 + 10); ctx.stroke();
@@ -40,9 +43,7 @@ export default (P) => {
         ctx.beginPath(); ctx.roundRect(-cardW / 2, y0, cardW, cardH, 18); ctx.fill();
         ctx.fillStyle = 'rgba(40, 190, 70, 1)'; ctx.fillRect(-cardW / 2, y0 + 44, cardW, 16);
         ctx.fillStyle = 'rgba(20, 22, 28, 1)'; ctx.beginPath(); ctx.roundRect(-34, y0 + 14, 68, 16, 8); ctx.fill();
-        ctx.font = '800 26px "JetBrains Mono"'; ctx.fillStyle = 'rgba(30, 34, 44, 1)'; ctx.letterSpacing = '4px';
-        ctx.fillText(`ID-0${i + 2}`, -cardW / 2 + 18, y0 + cardH - 22);
-        ctx.letterSpacing = '0px';
+        // (v3: the ID-0x card numbers are gone; the lyric owns the strip)
         // the word, printed down the card (reads top to bottom)
         ctx.save();
         ctx.translate(-px * 0.4, y0 + px * 0.98); ctx.rotate(Math.PI / 2);   // clear of the slot and the green band
@@ -54,7 +55,7 @@ export default (P) => {
       // ---- line 2: shrinking words under a narrowing trace, bottom left
       const t2 = L2.words[0].start;
       if (t >= t2 - 0.3) {
-        const sizes = [180, 165, 190, 140, 150];
+        const sizes = [180, 165, 215, 150, 150];   // HEARTS (mercy italic) large enough to read cleanly
         let x = 240;
         const pos = L2.words.map((w, i) => { const a = x; x += measure(ctx, w.w, sizes[i]) + sizes[i] * 0.12; return a; });
         const xEnd = x;
@@ -78,15 +79,11 @@ export default (P) => {
           if (t < w.start - 0.02) return;
           const px = sizes[i];
           if (keyOf(w.w) === 'thin') {
-            // THIN lands full height, holds, then flattens to half height like the trace
-            const f = 1 - 0.5 * ease.inOut3((t - w.start - 0.2) / 0.45);
-            ctx.save(); ctx.translate(pos[i], 1880); ctx.scale(1, f);
-            term(ctx, w, t, 0, 0, px, { ground: 'dark', alpha: out, echo: false });
-            ctx.restore();
+            // THIN lands and holds still (placement pass: no flatten after landing; the trace collapses)
+            term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false });
           } else term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false });
         });
       }
-      note(ctx, 'CORRIDOR B2  ·  FIBRE FRINGE  ·  150 CORES  ·  MATT 23:5', 3600, 2000, { ground: 'dark', align: 'right', px: 32, alpha: 0.8 * out });
     },
   };
 };

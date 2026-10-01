@@ -76,17 +76,24 @@ float coinF(vec3 p, vec4 c, float seed) {
 }
 float widow(vec3 p) {
   vec3 q = p - vec3(WX, 0, HZ + 0.28);
-  float b = length(q - vec3(0, 0.7, 0)) - 0.95;
+  float b = length(q - vec3(0, 0.8, 0)) - 0.95;
   if (b > 0.1) return b;
   q.xz = rot(-1.1) * q.xz;
-  float d = figure(q * vec3(1.2, 1.0, 1.15), 1.38, 4.0) * 0.83;
-  // the coat falls to the ankles
-  d = smin(d, sdRoundCone(q, vec3(0, 0.12, 0), vec3(0, 0.9, 0), 0.2, 0.15), 0.08);
-  // a veil over the head and shoulders
-  d = smin(d, sdRoundCone(q, vec3(0, 1.02, 0), vec3(0, 1.3, 0), 0.19, 0.1), 0.05);
-  // her right arm raised to the hopper's lip
-  vec3 sh = vec3(0.14, 1.05, 0.0), hd = vec3(0.24, 1.43, 0.36);
-  d = smin(d, sdCapsule(q, sh, mix(sh, hd, uHold), 0.036), 0.04);
+  // v3: a stylised standing silhouette with a clear head and shoulders: a long coat tapering up to
+  // narrow sloped shoulders, a slim neck, an oval head bowed slightly toward the hopper with a small
+  // knot of hair at the back (no face, no features)
+  float d = sdRoundCone(q, vec3(0, 0.16, 0), vec3(0, 1.02, 0), 0.21, 0.13);
+  d = smin(d, sdCapsule(q, vec3(-0.15, 1.13, 0.0), vec3(0.15, 1.13, 0.0), 0.06), 0.07);
+  d = smin(d, sdCapsule(q, vec3(0, 1.14, 0.0), vec3(0, 1.27, 0.012), 0.045), 0.03);
+  vec3 hq = q - vec3(0.0, 1.365, 0.03);
+  hq.yz = rot(-0.18) * hq.yz;
+  float head = sdEllipsoid(hq, vec3(0.077, 0.097, 0.088));
+  head = smin(head, sdSphere(hq - vec3(0.0, 0.035, -0.08), 0.042), 0.02);
+  d = smin(d, head, 0.015);
+  // her left arm hangs at her side; her right rises to the hopper's lip
+  d = smin(d, sdCapsule(q, vec3(-0.15, 1.1, 0.0), vec3(-0.19, 0.7, 0.04), 0.034), 0.03);
+  vec3 sh = vec3(0.15, 1.1, 0.0), down = vec3(0.19, 0.7, 0.05), hd = vec3(0.24, 1.43, 0.36);
+  d = smin(d, sdCapsule(q, sh, mix(down, hd, uHold), 0.034), 0.03);
   return d;
 }
 float mapObj(vec3 p, out int id) {
@@ -161,8 +168,11 @@ Mat material(int id, vec3 p, vec3 n) {
     return M(mix(vec3(0.86, 0.46, 0.3), vec3(0.4, 0.3, 0.25), v * 0.7), 0.3 + 0.3 * v, 1.0 - 0.6 * v);
   }
   // the widow: a matte dark silhouette caught by warm light
-  Mat m = M(vec3(0.035, 0.03, 0.03), 0.7, 0.0); m.sheen = 1.0;
-  m.emit = vec3(0.9, 0.45, 0.14) * pow(1.0 - abs(n.z), 4.0) * 0.5;
+  Mat m = M(vec3(0.012, 0.01, 0.012), 0.85, 0.0); m.sheen = 0.25;
+  // a warm rim: view fresnel, strongest on the side that faces the warm lamp behind her
+  float nv = clamp(dot(n, normalize(uCamPos - p)), 0.0, 1.0);
+  float side = 0.35 + 0.65 * clamp(dot(n, normalize(uP1 - p)) + 0.3, 0.0, 1.0);
+  m.emit = vec3(1.2, 0.56, 0.17) * pow(1.0 - nv, 2.5) * side * 1.6;
   return m;
 }
 vec3 shade(vec2 fc) {

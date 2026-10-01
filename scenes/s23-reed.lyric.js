@@ -12,7 +12,7 @@ const soft = (ctx, w, t, x, y, px, o) => { const k = Math.min(1, Math.max(0, (t 
 
 export default (P) => ({
   textSize: [3840, 2160],
-  shade: 0.4,
+  shade: 0.6,
   textPlane(t, cam) { return fullFrame(cam); },
   drawText(ctx, t) {
     // carry(ctx, t, P), laid out exactly where s22 set "fall and tire" (same size and place, so the
@@ -25,11 +25,13 @@ export default (P) => ({
     }
     const a = outFade(t, P.to - 0.02, P.to + 0.1);
     const mercy = { voice: VOICES.mercy, ground: 'dark', alpha: a };
+    const dim1 = { ...mercy, alpha: a * (1 - 0.55 * clamp01((t - L2.words[0].start + 0.05) / 0.2)) };   // previous line steps back
     // the bending stalk: "a cracked" / "reed" / "bruised"
     const rows = [[L1.words[0], L1.words[1]], [L1.words[2]], [L1.words[3]]];
     rows.forEach((row, r) => {
       let x = 300 + r * 150 + r * r * 40;
-      for (const w of row) x += soft(ctx, w, t, x, 470 + r * 250, 190, mercy) + 190 * 0.12;
+      // A (a lone italic capital) set larger and with a clear space after it so it reads as a word
+      for (const w of row) { const big = /^a$/i.test(w.w); x += soft(ctx, w, t, x, 470 + r * 250, big ? 250 : 190, dim1) + (big ? 190 * 0.4 : 190 * 0.12); }
     });
     // "I will never crush or kill", steady along the bottom right
     const pxI = 215, px = 170;   // "I" near the line's size so it reads as a word, not a stroke
@@ -39,6 +41,6 @@ export default (P) => ({
     let x = 3590 - (wI + px * 0.1 + wr);
     x += soft(ctx, I, t, x, 1860, pxI, { ground: 'dark', alpha: a });
     for (const w of rest) x += soft(ctx, w, t, x, 1860, px, mercy);
-    note(ctx, 'LOT 23  ·  SIGNAL FILAMENT  ·  STILL LIVE  ·  ISA 42:3', 250, 2010, { px: 34, ground: 'dark', alpha: 0.7 * a * (t > P.from + 0.9 ? 1 : 0) });
+    note(ctx, 'LOT 23  ·  SIGNAL FILAMENT  ·  STILL LIVE', 250, 2010, { px: 34, ground: 'dark', alpha: 0.7 * a * (t > P.from + 0.9 ? 1 : 0) });
   },
 });

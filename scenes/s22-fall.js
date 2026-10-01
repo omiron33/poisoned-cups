@@ -124,11 +124,19 @@ vec3 shade(vec2 fc) {
       // a 3-frame tear on each impact
       u.uTear.value = impacts.some((ti) => t >= ti && t < ti + 0.05) ? 0.7 : 0;
       // the room itself warms with the core
-      const cA = rgb('66, 44, 96', 1.1), wA = rgb('132, 92, 64', 1.5);
-      setV(u, 'uCycA', cA.map((x, i) => x + (wA[i] - x) * warm));
-      setV(u, 'uHazeCol', [0.07 + 0.08 * warm, 0.05 + 0.05 * warm, 0.1 - 0.04 * warm]);
+      // v3: after "fall" the warm core fills the whole room (walls, floor, haze, key) so the last
+      // second reads clearly and hands over to s23's quiet warm pocket
+      const end = ease.inOut3((t - tFall) / 0.9);
+      const cA = rgb('66, 44, 96', 1.1), wA = rgb('132, 92, 64', 1.5), eA = rgb('168, 112, 70', 1.9);
+      const wa = cA.map((x, i) => x + (wA[i] - x) * warm);
+      setV(u, 'uCycA', wa.map((x, i) => x + (eA[i] - x) * end));
+      const cB = rgb('18, 12, 30', 1.0), eB = rgb('70, 44, 30', 1.2);
+      setV(u, 'uCycB', cB.map((x, i) => x + (eB[i] - x) * end));
+      setV(u, 'uHazeCol', [0.07 + 0.08 * warm + 0.12 * end, 0.05 + 0.05 * warm + 0.07 * end, 0.1 - 0.04 * warm - 0.02 * end]);
+      setV(u, 'uKeyCol', [2.0 + 1.0 * end, 2.1 + 0.3 * end, 2.5 - 0.9 * end]);
+      setV(u, 'uFloorCol', rgb('48, 46, 56', 0.7).map((x, i) => x + (rgb('96, 72, 54', 0.9)[i] - x) * end));
       setV(u, 'uP1', [0.0, 1.1, -0.9]);
-      setV(u, 'uP1c', [11 * warm, 7.6 * warm, 4.4 * warm]);
+      setV(u, 'uP1c', [11 * warm * (1 + 1.4 * end), 7.6 * warm * (1 + 1.4 * end), 4.4 * warm * (1 + 1.4 * end)]);
       setV(u, 'uP2', [0.0, 1.4, 1.6]);
       setV(u, 'uP2c', [0.4 * (1 - dead), 1.6 * (1 - dead), 0.7 * (1 - dead)]);
     },

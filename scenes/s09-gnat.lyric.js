@@ -42,8 +42,8 @@ export default (P) => ({
     // line 2: huge
     const fade = outFade(t, P.to - 0.2, P.to);
     const [wLet, wThe, wCamel, wThr] = L2.words;
-    arm(ctx, [wLet, wThe], t, strike, { x: 240, y: 470, px: 190, alpha: fade, flash: false, shake: 0.4 });
-    strike(ctx, wCamel, t, 240, 1340, 660, { alpha: fade, from: 1.4, rot: 0.04, flash: false, shake: 0.5 });
+    arm(ctx, [wLet, wThe], t, strike, { x: 240, y: 400, px: 190, alpha: fade, flash: false, shake: 0.4 });
+    strike(ctx, wCamel, t, 240, 1400, 640, { alpha: fade, from: 0.25, rot: 0.03, flash: false, shake: 0.4 });   // drives in from only a little larger, so it never rides up over LET THE
     if (wThr) ghost(ctx, wThr, t, 250, 1840, 280, { alpha: fade, dir: -1 });
     if (t > wCamel.start) note(ctx, 'LANE B  ·  CARGO 40 FT  ·  38,000 KG  ·  CLEARED  ·  MATT 23:24', 3600, 1990, { px: 38, align: 'right', color: '150, 255, 110', alpha: 0.9 * fade });
   },

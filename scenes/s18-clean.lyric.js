@@ -10,7 +10,7 @@ import { lines18 } from './s18-clean.js';
 
 const INK = '16, 18, 24';
 const GREEN = '20, 110, 40';
-const CAPS = ['APPROVE', 'CONFIRM', 'AUTHORISE', 'EXECUTE', 'RAISE  ↑'];
+const CAPS = ['APPROVE', 'CONFIRM', 'AUTHORISE', 'EXECUTE', 'SIGN  ↑'];
 
 // a button chip holding one word, popped in over 0.08 s on the onset, then still
 function chip(ctx, w, t, x, y, px, cap, alpha) {
@@ -70,15 +70,10 @@ export default (P) => {
         ctx.beginPath(); ctx.arc(bx, by, r * (0.7 + 0.3 * k), 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = `rgba(250, 252, 252, ${(a1 * k).toFixed(3)})`; ctx.lineWidth = 12; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(bx - 30, by + 2); ctx.lineTo(bx - 8, by + 26); ctx.lineTo(bx + 34, by - 24); ctx.stroke();
-        note(ctx, 'COMPLIANCE SCAN  ·  0 FINDINGS  ·  CERTIFIED', 256, 800, { px: 38, ground: 'light', alpha: 0.85 * a1 * k, color: INK });
       }
       // line 2: a row of buttons along the bottom
       x = 250;
       L2.words.forEach((w, i) => { x += chip(ctx, w, t, x, 1900, 150, CAPS[i] ?? 'CONFIRM', 1) + 60; });
-      if (t >= L2.words[0].start) {
-        const k = clamp01((t - L2.words[0].start) / 0.2);
-        note(ctx, '> exec approve --all --no-audit', 3590, 2010, { px: 34, ground: 'light', align: 'right', alpha: 0.8 * k, color: INK });
-      }
     },
   };
 };

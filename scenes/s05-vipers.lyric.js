@@ -47,9 +47,11 @@ export default (P) => {
     drawText(ctx, t) {
       carry(ctx, t, P, { x: 1500, y: 1960 });
       const out = outFade(t, P.to - 0.3, P.to);
-      column(ctx, brood, t, 260, 640, 280, 0, 0.0, out);
-      column(ctx, of, t, 300, 1000, 190, 0, 1.4, out);
-      column(ctx, vipers, t, 260, 1420, 300, 0, 2.6, out);
+      // placement pass: once the question starts, line 1 dims back so the current line dominates
+      const d1 = out * (1 - 0.55 * clamp01((t - (body[0].start - 0.1)) / 0.25));
+      column(ctx, brood, t, 260, 640, 280, 0, 0.0, d1);
+      column(ctx, of, t, 300, 1000, 190, 0, 1.4, d1);
+      column(ctx, vipers, t, 260, 1420, 300, 0, 2.6, d1);
       
       // the question: a thin readout along the right, each word scanned in
       const qpx = 120;
@@ -77,7 +79,6 @@ export default (P) => {
           paint(ctx, fire.w, fx + sx, fy, fpx, { voice: VOICES.violent, ink: HOT, alpha: a });
           ctx.restore();
         }
-        note(ctx, 'THERMAL  ·  AISLE END  ·  RISING', 3600, 1310, { px: 38, align: 'right', alpha: 0.8 * a });
       }
       note(ctx, 'NEST 03  ·  CAT6 BRAID  ·  DORMANT  ·  MATT 23:33', 3600, 250, { px: 40, align: 'right', alpha: 0.7 * out });
     },

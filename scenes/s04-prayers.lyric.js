@@ -46,7 +46,6 @@ export default (P) => {
         const gap = px * 0.7;
         let x = 1920 - (widths[0] + widths[1] + gap) / 2, n = 0;
         L1.words.forEach((w, i) => { softWave(ctx, w, t, x, 1640, px, n, f1); n += shown(w.w).length + 2; x += widths[i] + gap; });
-        note(ctx, 'ASSISTANT  ·  VOICE  ·  −42 dB  ·  CALM', 1920, 1800, { px: 32, align: 'center', color: '200, 190, 235', alpha: 0.8 * f1 * clamp01((t - L1.words[0].start) / 0.2) });
       }
       // ---- line 2
       const f2 = outFade(t, P.to - 0.25, P.to);
@@ -63,12 +62,11 @@ export default (P) => {
         ctx.lineTo(sx - 60, 1960); ctx.lineTo(sx - 20, 1960 - amp); ctx.lineTo(sx + 10, 1960 + amp * 0.2); ctx.lineTo(sx + 50, 1960);
         for (let k = 0; k < 14; k++) { const xx = sx + 150 + k * 210; ctx.lineTo(xx, 1960 - (hs(k) - 0.5) * 60 * clamp01((t - sharp.start) / 0.2)); }
         ctx.lineTo(3580, 1960); ctx.stroke();
-        note(ctx, 'PEAK  +24 dB', sx + 80, 1960 - Math.min(amp, 300) + 40, { px: 32, color: '255, 92, 170', alpha: f2 * clamp01(1 - (u - 0.8) / 0.3) });
-        strike(ctx, cut, t, 260, 1000, 520, { ...o, shake: 1.2 });
+        strike(ctx, cut, t, 260, 1000, 520, { ...o, shake: 0.5 });
         paint(ctx, like.w, 260, 1300, 170, { ...o, alpha: f2 * clamp01((t - like.start + 0.02) / 0.06) });
         // SHARPENED: slashed in, then after it has held its letters shear into offset fragments
         const sxw = 260 + measure(ctx, like.w, 170) + 30;
-        const shear = ease.out3((t - sharp.start - 0.35) / 0.25);
+        const shear = 0;   // placement pass: SHARPENED is slashed in and then holds whole and still
         if (t >= sharp.start - 0.02) {
           if (shear <= 0) slash(ctx, sharp, t, sxw, 1300, 230, { ...o, angle: 0.45 });
           else {

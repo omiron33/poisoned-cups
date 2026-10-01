@@ -30,7 +30,7 @@ export default (P) => ({
     }
     if (u >= T26.ref) {
       const k = clamp01((u - T26.ref) / 0.6);
-      note(ctx, 'MATTHEW 23:26', 262, 1935, { px: 58, ground: 'dark', alpha: 0.92 * k * end, color: '236, 226, 206' });
+      note(ctx, 'MATTHEW 23:26', 262, 1980, { px: 58, ground: 'dark', alpha: 0.92 * k * end, color: '236, 226, 206' });
     }
   },
 });

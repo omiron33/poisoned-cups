@@ -4,11 +4,13 @@
 // camera drives through the crack the signage is gone; inside, "Over rotting bones" builds from
 // flickering machine labels pinned by leader lines to the blades, trunks and coolant: each word in
 // its own label panel with a mono fault tag, voltage-flickering on.
-import { linesFrom, measure, paint, volt, note, outFade, clamp01, ease, keyOf, carry, project } from '/song/lib/type.js';
+import { linesFrom, measure, paint, volt, note, outFade, clamp01, ease, keyOf, carry, project, VOICES } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
 import { tombCamera, crackX } from '/song/scenes/s03-tomb.js';
 
 const [L1, L2] = linesFrom('White stone walls', 'Over rotting bones');
+// the claim voice at a heavier weight: the light strokes broke up on the grey (walls read 3.25:1)
+const SIGN = { ...VOICES.claim, font: (px) => `500 ${px}px "Inter Tight"` };
 
 // PLOT: the word is drawn by a hairline that sweeps left to right across it in 0.08 s
 function plot(ctx, w, t, x, y, px, o) {
@@ -43,7 +45,7 @@ export default (P) => {
         L1.words.forEach((w, i) => {
           const px = 200, x = 260, y = 700 + i * 360;
           if (t < w.start - 0.25) return;
-          const wd = measure(ctx, w.w, px, { ground: 'light' }) - px * 0.26;
+          const wd = measure(ctx, w.w, px, { ground: 'light', voice: SIGN }) - px * 0.26;
           // the dimension line draws itself just before the word
           const k = ease.out3((t - (w.start - 0.25)) / 0.25);
           const yl = y - px * 1.05;
@@ -53,8 +55,7 @@ export default (P) => {
           ctx.moveTo(x, yl - 18); ctx.lineTo(x, yl + 18);
           if (k > 0.98) { ctx.moveTo(x + wd, yl - 18); ctx.lineTo(x + wd, yl + 18); }
           ctx.stroke();
-          if (k > 0.98) note(ctx, `${['W 1400', 'H 2600', 'D 1600'][i]} MM`, x + wd + 30, yl + 12, { px: 30, color: ink, alpha: 0.85 * f1 });
-          plot(ctx, w, t, x, y, px, { ground: 'light', alpha: f1, ink: '6, 8, 14' });   // near-black: the light strokes need it on the grey
+          plot(ctx, w, t, x, y, px, { ground: 'light', alpha: f1, ink: '6, 8, 14', voice: SIGN });   // near-black: the light strokes need it on the grey
         });
         note(ctx, 'UNIT 03  ·  MONOLITH  ·  CLEAN ROOM WHITE  ·  MATT 23:27', 260, 1880, { px: 32, color: '30, 34, 44', rule: 700, alpha: 0.85 * f1 });
       }
@@ -62,7 +63,6 @@ export default (P) => {
       const f2 = outFade(t, P.to - 0.25, P.to);
       const c = cam(t);
       const spots = [[300, 640], [1320, 1180], [1900, 1760]];
-      const tags = ['BLADE 07  ·  FAULT', 'TRUNK 3  ·  CORRUPT', 'RACK SPINE  ·  DEAD'];
       L2.words.forEach((w, i) => {
         if (t < w.start - 0.02) return;
         const px = 210;
@@ -73,7 +73,7 @@ export default (P) => {
         const col = hot ? '255, 92, 170' : '150, 255, 110';
         // the panel and its frame
         const bx = x - 40, by = y - px * 1.08, bw = wd + 80, bh = px * 1.4;
-        ctx.fillStyle = `rgba(8, 8, 12, ${(0.72 * f2 * k).toFixed(3)})`; ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = `rgba(8, 8, 12, ${(f2 * k).toFixed(3)})`; ctx.fillRect(bx, by, bw, bh);   // opaque: the halo no longer lifts the panel to grey
         ctx.strokeStyle = `rgba(${col}, ${(0.9 * f2 * k).toFixed(3)})`; ctx.lineWidth = 4; ctx.strokeRect(bx, by, bw, bh);
         // the leader to its component (the line follows the camera; the label stays still)
         const q = project(c, targets[i]);
@@ -82,8 +82,7 @@ export default (P) => {
           ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(q.x, q.y); ctx.stroke();
           ctx.fillStyle = `rgba(${col}, ${(f2 * k).toFixed(3)})`; ctx.beginPath(); ctx.arc(q.x, q.y, 12, 0, Math.PI * 2); ctx.fill();
         }
-        note(ctx, tags[i], bx, by - 22, { px: 32, color: col, alpha: 0.95 * f2 * k });
-        volt(ctx, w, t, x, y, px, { ground: 'dark', alpha: f2 });
+        volt(ctx, w, t, x, y, px, { ground: 'dark', alpha: f2, ink: hot ? '255, 150, 206' : undefined });   // a lighter magenta
       });
     },
   };

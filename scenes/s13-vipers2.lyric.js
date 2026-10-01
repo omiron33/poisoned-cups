@@ -1,6 +1,6 @@
 // The words of s13-vipers2 (hook rung 3). BROOD OF VIPERS crawls up both frame edges like the
 // vipers up the pillars: set on end, each word typed upward along its baseline behind a block
-// cursor (a head leading the body), BROOD and OF up the left edge, VIPERS up the right. The
+// cursor (a head leading the body), BROOD and OF up the left edge, VIPERS in the column beside them. The
 // question is a scanned readout across the middle, and FIRE? is a thermal warning panel: a mono
 // header, a limit gauge whose bar overruns its box past the limit tick, and FIRE? inside it,
 // voltage-flickering in on the hit.
@@ -16,13 +16,15 @@ export default (P) => {
   const cw = lyrics.words.filter((w) => w.start < P.from + 0.02 && w.end > P.from - 0.3);
   const holdGate = (ctx, t) => {
     if (!cw.length || t > P.from + 0.8) return;
-    const a = 1 - clamp01((t - (cw[cw.length - 1].end + 0.22)) / 0.15);   // readable past +0.15 s, gone before VIPERS
+    const a = 1 - clamp01((t - (cw[cw.length - 1].end + 0.32)) / 0.12);   // readable past +0.3 s, gone before VIPERS
     if (a <= 0.002) return;
     const G = linesFrom('Then you guard the gate')[0].words;
     const px2 = 200, pre = px2 * 0.5;
     const adv2 = G.map((w) => measure(ctx, w.w, px2));
     const total = adv2.reduce((p, b) => p + b, 0) + px2 * 0.2 * 4 + pre - px2 * 0.26;
     let x2 = 1920 - total / 2;
+    // s12's dark hard-lock band behind the line, held with it (without it GATE's light strokes broke up on the pillar)
+    ctx.fillStyle = `rgba(6, 4, 10, ${(0.97 * a).toFixed(3)})`; ctx.fillRect(560, 1640, 3280, 360);
     G.forEach((w, i) => { paint(ctx, w.w, x2, 1880, px2, { alpha: a }); x2 += adv2[i] + px2 * 0.2 + (i === 3 ? pre : 0); });
   };
   return {
@@ -34,11 +36,13 @@ export default (P) => {
       // centre) so GATE does not jump at the cut, then fade it (carry()'s timing)
       holdGate(ctx, t);
       const out = outFade(t, P.to - 0.3, P.to);
-      const o = { ground: 'dark', alpha: out, echo: false };
-      // up the left edge: BROOD then OF; up the right edge: VIPERS
+      // placement pass: the hook dims back once the question starts, so the current line dominates
+      const o = { ground: 'dark', alpha: out * (1 - 0.55 * clamp01((t - (body[0].start - 0.1)) / 0.25)), echo: false };
+      // up the left edge as one block read in order: BROOD then OF in the first column, VIPERS in
+      // the column beside it (the next rotated line), not split across the frame
       const bw = up(ctx, term, brood, t, 520, 1960, 370, o);   // clear of the held s12 line at the cut
       up(ctx, term, of, t, 520, 1960 - bw - 200, 370, o);
-      up(ctx, term, vipers, t, 3610, 1960, 390, o);
+      up(ctx, term, vipers, t, 520 + 370 * 1.32, 1960, 370, o);
       // the question: a scanned readout across the middle
       const qpx = 112;
       let tw = 0; for (const w of body) tw += measure(ctx, w.w, qpx);
@@ -49,7 +53,8 @@ export default (P) => {
       if (u > -0.3) {
         const k = ease.out3((u + 0.3) / 0.25);
         const x0 = 1300, x1 = 2540, y0 = 1540, y1 = 1975;
-        ctx.fillStyle = `rgba(14, 6, 10, ${(0.72 * k * out).toFixed(3)})`; ctx.fillRect(x0, y0, (x1 - x0) * k, y1 - y0);
+        ctx.fillStyle = `rgba(14, 6, 10, ${(k * out).toFixed(3)})`;   // opaque: the halo no longer lifts it to grey
+        ctx.fillRect(x0, y0, (x1 - x0) * k, y1 - y0);
         ctx.strokeStyle = `rgba(255, 180, 120, ${(0.8 * k * out).toFixed(3)})`; ctx.lineWidth = 4;
         ctx.strokeRect(x0, y0, (x1 - x0) * k, y1 - y0);
         note(ctx, 'THERMAL  ·  LIMIT 85°C  ·  EXCEEDED', x0 + 30, y0 + 64, { px: 40, alpha: 0.9 * k * out, color: '255, 200, 150' });

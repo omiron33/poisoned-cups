@@ -10,6 +10,15 @@ import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CUP_GLSL } from '/song/lib/x-cup.js';
 import { XF_GLSL } from '/song/lib/x-f.js';
 
+// v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
+// ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut
+const settleIn = (cam, t, t0, amt = 0.05, dur = 0.6) => {
+  const x = (t - t0) / dur;
+  if (x >= 1) return cam;
+  const k = 1 - ease.inOut3(Math.max(0, x));
+  return { ...cam, pos: cam.pos.map((v, i) => v + (v - cam.target[i]) * amt * k) };
+};
+
 const [L1, L2] = linesFrom('You paint the graves', 'With your incense');
 const W = (L, k) => L.words.find((w) => w.w.toLowerCase().replace(/[^a-z]/g, '').startsWith(k));
 const BC = [-0.3, 1.0, 0.0];          // block centre (half size 0.45, 1.0, 0.35)
@@ -153,7 +162,7 @@ vec3 shade(vec2 fc) {
       uP1: [0, 1.1, 0.6], uP1c: [0.1, 0.8, 0.15],
       uD: new Array(9).fill(0), uCoat: 0, uFog: 0, uPulse: 1,
     },
-    camera: R.camera,
+    camera: (t) => settleIn(R.camera(t), t, P.from),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       u.uD.value = [0, 1, 2].map((i) => drone(t, i)).flat();

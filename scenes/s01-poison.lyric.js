@@ -32,7 +32,7 @@ function contour(ctx, words, t, { cx, cy, r, px, alpha = 1, voice }) {
   const v = voice;
   const size = Math.round(px * v.scale);
   ctx.font = v.font(size); ctx.letterSpacing = '0px';
-  const tr = (v.track ?? 0) * size, gap = px * 0.85;
+  const tr = (v.track ?? 0) * size, gap = px * 1.25;   // a full word space: YOU / POLISH / CUPS never close up
   const strs = words.map((w) => { let s = shown(w.w); if (v.caps) s = s.toUpperCase(); return s; });
   const widths = strs.map((s) => [...s].reduce((a, ch) => a + ctx.measureText(ch).width + tr, 0) - tr);
   const total = widths.reduce((a, b) => a + b, 0) + gap * (words.length - 1);
@@ -40,7 +40,7 @@ function contour(ctx, words, t, { cx, cy, r, px, alpha = 1, voice }) {
   const a0 = ang;
   words.forEach((w, i) => {
     const st = arrive(w, t, 0.08);
-    const slide = (1 - st.k) * (px * 0.9) / r;   // glides in along the curve from the left
+    const slide = -(1 - st.k) * (px * 0.5) / r;   // glides in along the curve from the right (away from the word before it)
     let aa = ang + slide;
     for (const ch of strs[i]) {
       const cw = ctx.measureText(ch).width;
@@ -94,7 +94,7 @@ export default (P) => {
       const pxL = 240;
       arm(ctx, L2.words.slice(0, 2), t, bloom, { x: 250, y: 860, px: pxL, ground: 'dark', alpha: a2 });
       const pw = L2.words.find((w) => /poison/i.test(w.w));
-      const adv = lockOn(ctx, pw, t, 250, 860 + pxL * 1.62, pxL, { ground: 'dark', alpha: a2, tag: 'CONTAMINANT 01', hud: '150, 255, 110', flash: false });
+      const adv = lockOn(ctx, pw, t, 250, 860 + pxL * 1.62, pxL, { ground: 'dark', alpha: a2, hud: '150, 255, 110', flash: false });
       for (const w of L2.words.slice(L2.words.indexOf(pw) + 1)) bloom(ctx, w, t, 250 + adv + pxL * 0.5, 860 + pxL * 1.62, pxL, { ground: 'dark', alpha: a2 });
     },
   };

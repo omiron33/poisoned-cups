@@ -62,7 +62,7 @@ export default (P) => {
       }
       if (t >= tM + 0.5) {
         const k = clamp01((t - tM - 0.5) / 0.25);
-        note(ctx, 'OBJ 00  ·  CHALICE  ·  TI / AU', x + 8, 1460, { px: 40, ground: 'dark', alpha: 0.85 * a * k, color: '200, 214, 226' });
+        note(ctx, 'OBJ 00  ·  CHALICE  ·  TI / AU', 3590, 1990, { px: 40, align: 'right', ground: 'dark', alpha: 0.85 * a * k, color: '200, 214, 226' });
       }
     },
   };

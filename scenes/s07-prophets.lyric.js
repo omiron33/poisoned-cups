@@ -4,7 +4,7 @@
 // corrupts, "That your fathers" is typed into a system log at the left in mono, and "TRIED TO
 // KILL" interrupts as a harsh system override: a magenta header bar snaps across and the words
 // hit huge in hot magenta, TRIED and TO voltage-flickering, KILL glitch-cut on the hit.
-import { linesFrom, term, volt, glitch, dossier, paint, measure, note, outFade, clamp01, ease, VOICES, carry } from '/song/lib/type.js';
+import { linesFrom, term, volt, glitch, dossier, arm, paint, measure, note, outFade, clamp01, ease, VOICES, carry } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
 import { prophetTimes } from '/song/scenes/s07-prophets.js';
 
@@ -43,7 +43,6 @@ export default (P) => {
         let x = 1920 - total / 2;
         laurel(ctx, x - 150, y - px * 0.4, 150, 1, f1);
         laurel(ctx, x + total + 150, y - px * 0.4, 150, -1, f1);
-        note(ctx, 'IN MEMORIAM  ·  OFFICIAL TRIBUTE  ·  FEED 07', 1920, y - px * 1.3, { px: 32, align: 'center', color: '214, 222, 240', alpha: 0.85 * f1 });
         L1.words.forEach((w, i) => {
           const a = clamp01((t - w.start + 0.02) / 0.08) * f1;
           if (a > 0.002) paint(ctx, w.w, x, y, px, { voice: v, alpha: a, ground: 'dark' });
@@ -55,17 +54,24 @@ export default (P) => {
       const [that, your, fathers, tried, to, kill] = L2.words;
       if (t >= that.start - 0.02) {
         const ex = ease.out3((t - that.start) / 0.2);
-        ctx.fillStyle = `rgba(150, 255, 110, ${(0.9 * f2 * ex).toFixed(3)})`;
-        ctx.font = '800 30px "JetBrains Mono"'; ctx.letterSpacing = '6px';
-        ctx.fillText('> ARCHIVE 1947–2031  /  UNSEALED', 260, 1130);
-        ctx.letterSpacing = '0px';
         let x = 260;
-        for (const w of [that, your, fathers]) x += term(ctx, w, t, x, 1300, 130, { voice: VOICES.cite, ground: 'dark', alpha: f2, echo: false });
+        for (const w of [that, your, fathers]) x += term(ctx, w, t, x, 1320, 175, { voice: VOICES.cite, ground: 'dark', alpha: f2, echo: false }) + 20;   // large enough that THAT reads
       }
       if (t >= tried.start - 0.4) {
-        dossier(ctx, [tried, to, kill], t, {
-          x: 260, y: 1820, px: 330, head: 'SYSTEM OVERRIDE  ·  0x23:31  ·  HISTORY REWRITE', maxW: 3300, ground: 'dark', alpha: f2,
-          weapon: (w, i) => (i === 2 ? glitch : volt),
+        // the override header: a slim bar centred in the gap between the two rows (lib dossier()
+        // set a tall bar that touched both), then the words laid out exactly as dossier() does
+        {
+          const k = ease.out3((t - (tried.start - 0.4)) / 0.25), hp = 40, head = 'SYSTEM OVERRIDE  ·  HISTORY REWRITE';
+          ctx.font = `800 ${hp}px "JetBrains Mono"`; ctx.letterSpacing = `${hp * 0.2}px`;
+          const hw = ctx.measureText(head).width;
+          ctx.fillStyle = `rgba(150, 255, 110, ${(0.9 * k * f2).toFixed(3)})`;
+          ctx.fillRect(260, 1392, (hw + hp * 0.8) * k, hp * 1.4);
+          ctx.fillStyle = `rgba(8, 10, 12, ${(k * f2).toFixed(3)})`;
+          if (k > 0.98) ctx.fillText(head, 260 + hp * 0.4, 1392 + hp * 1.07);
+          ctx.letterSpacing = '0px';
+        }
+        arm(ctx, [tried, to, kill], t, (w, i) => (i === 2 ? glitch : volt), {
+          x: 260, y: 1820, px: 330, maxW: 3300, ground: 'dark', alpha: f2,
           voice: VOICES.violent, ink: '255, 158, 212',   // a lighter magenta: the red bars sit behind it
         });
       }

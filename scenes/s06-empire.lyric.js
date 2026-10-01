@@ -57,7 +57,6 @@ export default (P) => ({
         if (i === 2) { x = 250; row = 1; }
         x += coilWord(ctx, w, t, x, 1480 + row * 330, px, { amp: 34, freq: 0.0052, alpha: f1 });
       });
-      if (t > L1.words[0].start) note(ctx, 'STRAND 01  ·  TORSION 360°', 250, 2030, { px: 40, alpha: 0.8 * f1 });
     }
     // line 2: a rack in the right column, filled top down, EMPIRE the big base unit
     const fade = outFade(t, P.to - 0.25, P.to);
@@ -86,10 +85,9 @@ export default (P) => ({
         ctx.fillStyle = j === 2 && isEmp ? `rgba(255, 60, 170, ${(0.95 * a).toFixed(3)})` : `rgba(90, 255, 130, ${((on(j) ? 0.95 : 0.25) * a).toFixed(3)})`;
         ctx.fillRect(px0 + W - 60, top + h * (0.24 + j * 0.2), 22, h * 0.1);
       }
-      note(ctx, `U${String(i + 1).padStart(2, '0')}`, px0 + W - 100, top + h * 0.62, { px: 32, align: 'right', color: '160, 168, 190', alpha: 0.85 * a });
       paint(ctx, w.w, px0 + 140, top + h * 0.5 + px * 0.36, px, { alpha: a });
     });
     const na = Math.min(clamp01((t - b0) / 0.3), fade);
-    if (na > 0.01) note(ctx, 'RACK 06  ·  5U  ·  SKYLINE', xr, 600, { px: 40, align: 'right', rule: 0, alpha: 0.85 * na });
+    if (na > 0.01) note(ctx, 'RACK 06  ·  5U  ·  SKYLINE', xr, 440, { px: 40, align: 'right', rule: 0, alpha: 0.85 * na });
   },
 });

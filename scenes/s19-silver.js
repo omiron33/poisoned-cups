@@ -10,9 +10,19 @@ import { ease, grade, rgb, linesAt, clamp, spring } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { E_GLSL } from '/song/lib/x-e.js';
 
+// v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
+// ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut
+const settleIn = (cam, t, t0, amt = 0.05, dur = 0.6) => {
+  const x = (t - t0) / dur;
+  if (x >= 1) return cam;
+  const k = 1 - ease.inOut3(Math.max(0, x));
+  return { ...cam, pos: cam.pos.map((v, i) => v + (v - cam.target[i]) * amt * k) };
+};
+
 export const lines19 = (P) => linesAt(P.from - 1.0, 'Silver in your palms', 'Blood on the floor');
 const DOOR = [0.55, -3.4];     // doorway centre x, back wall z
-const RUN0 = [0.3, -0.62];     // where the spill starts running (under the tray's front lip)
+const RUN0 = [0.3, -0.62];
+const IN = 1.2;                 // the push into the door light over the scene's last 1.2 s     // where the spill starts running (under the tray's front lip)
 
 const TY = 1.0, TZ = -1.05;     // the tray's floor height and centre z
 const STREAMS = [-0.36, 0.0, 0.36];
@@ -21,6 +31,7 @@ export default (P) => {
   const t0 = P.from;
   const [L1, L2] = lines19(P);
   const tBlood = L2.words[0].start;
+  const CA = rgb('222, 228, 230', 1.0), CB = rgb('200, 208, 212', 0.85), FC = rgb('214, 218, 220', 0.8);
   const camera = (t) => {
     const u = t - t0;
     // A: square on to the tray, a slow push; B from "Blood": one continuous move down and
@@ -37,7 +48,17 @@ export default (P) => {
     const head = [RUN0[0] + (DOOR[0] - RUN0[0]) * rl, 0.05, RUN0[1] + (DOOR[1] - RUN0[1]) * rl - 0.5];
     const kk = ease.inOut3((t - tBlood) / 0.7);
     const tg = aEnd.target.map((v, i) => v + (head[i] - v) * kk);
-    return { pos: m(aEnd.pos, F.pos), target: tg, fov: 40 + 4 * k, roll: 0.02 * Math.sin(k * 3.1) };
+    const base = { pos: m(aEnd.pos, F.pos), target: tg, fov: 40 + 4 * k, roll: 0.02 * Math.sin(k * 3.1) };
+    // last 1.2 s: the camera rises off the spill and follows it on into the doorway until the
+    // door's light fills the frame (s20 opens on that same light). Still moving at the cut.
+    const ki = clamp((t - (P.to - IN)) / IN, 0, 1);
+    if (ki <= 0) return base;
+    // position eases in and is still travelling at the cut; the aim settles on the door first
+    const e = Math.pow(ki, 2.2);
+    const ea = ki * ki * (3 - 2 * ki);
+    const D = { pos: [DOOR[0], 0.85, DOOR[1] + 0.3], target: [DOOR[0], 0.95, DOOR[1] - 0.9] };
+    const mm = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+    return { pos: mm(base.pos, D.pos, e), target: mm(base.target, D.target, ea), fov: base.fov + (40 - base.fov) * ea, roll: base.roll * (1 - ea) };
   };
   const runL = (t) => { const x = t - tBlood; return x <= 0.1 ? 0 : Math.min(1, ease.inOut3((x - 0.1) / (P.to - tBlood)) * 1.02); };
   return {
@@ -200,15 +221,15 @@ vec3 shade(vec2 fc) {
 }`,
     uniforms: {
       ...STUDIO_UNIFORMS,
-      uCycA: rgb('222, 228, 230', 1.0), uCycB: rgb('200, 208, 212', 0.85),
-      uFloorCol: rgb('214, 218, 220', 0.8), uFloorRough: 0.14, uFloorGrain: 0.6, uGrime: 0.1,
+      uCycA: CA, uCycB: CB,
+      uFloorCol: FC, uFloorRough: 0.14, uFloorGrain: 0.6, uGrime: 0.1,
       uHaze: 0.015, uHazeCol: rgb('220, 230, 235', 0.4),
       uKeyDir: [0.1, 1.0, 0.25], uKeyCol: [3.0, 3.1, 3.3], uKeySize: 0.5,
       uRimA: [1.6, 1.7, 1.8], uRimB: [1.6, 1.7, 1.8],
       uP1: [DOOR[0], 1.2, DOOR[1] + 0.4], uP1c: [2.4, 1.6, 0.8],
       uRun: 0, uHeap: 0, uFloorHeap: 0, uPool: 0, uRunL: 0, uRed: 0, uSig: 0,
     },
-    camera,
+    camera: (t) => settleIn(camera(t), t, P.from),
     textPlane() { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       u.uRun.value = t - t0 + 3.0;
@@ -223,9 +244,17 @@ vec3 shade(vec2 fc) {
       u.uSig.value = x <= 0 ? 0 : Math.exp(-x * 1.3);
       // the room cools and dims a little as it spreads; the door's warmth grows
       const k = ease.inOut3(x / 2.0);
-      u.uKeyCol.value = [3.0 - 0.6 * k, 3.1 - 0.7 * k, 3.3 - 0.6 * k];
+      // over the last 0.4 s the room's exposure falls away (s20's wall is black); the door stays
+      const f = 1 - 0.85 * ease.inOut3((t - (P.to - 0.4)) / 0.4);
+      u.uKeyCol.value = [(3.0 - 0.6 * k) * f, (3.1 - 0.7 * k) * f, (3.3 - 0.6 * k) * f];
+      u.uRimA.value = [1.6 * f, 1.7 * f, 1.8 * f]; u.uRimB.value = u.uRimA.value;
+      u.uCycA.value = CA.map((v) => v * f); u.uCycB.value = CB.map((v) => v * f);
+      u.uFloorCol.value = FC.map((v) => v * f);
       u.uP1c.value = [2.4 + 2.0 * k, 1.6 + 1.2 * k, 0.8 + 0.5 * k];
     },
-    post(t) { return grade(t, { exposure: 1.0, vignette: 0.32 }); },
+    post(t) {
+      const f = ease.inOut3((t - (P.to - 0.4)) / 0.4);
+      return grade(t, { exposure: 1.0, vignette: 0.32 + 0.13 * f, bloom: 0.07 + 0.02 * f });
+    },
   };
 };

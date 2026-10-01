@@ -24,7 +24,9 @@ export function loadsCamera(P) {
   const { tLoads, tThat, tLift } = loadsTimes();
   return (t) => {
     const u = t - P.from;
-    const jolt = t > tLoads ? 0.03 * Math.exp(-(t - tLoads) * 9) * Math.sin((t - tLoads) * 55) : 0;
+    // the impact: a damped dip that eases in over 6 frames and rings out at ~5 Hz (no one-frame jolt)
+    const x = t - tLoads;
+    const jolt = x > 0 ? -0.02 * ease.inOut3(x / 0.1) * Math.exp(-x * 6) * Math.cos(x * 28) : 0;
     const k = ease.inOut3((t - (tThat - 0.2)) / 1.1);
     const m = (a, b) => a + (b - a) * k;
     return orbit(t, {
@@ -65,6 +67,17 @@ export default (P) => {
     return p.map((v, i) => v + (pick[i] - v) * back);
   };
   const run = (t) => 0.55 * (t - t0);
+  // belt position: full speed until "loads", then speed falls as (1 - x)^2 over BRAKE s; after a
+  // beat it eases back up to a slow creep (0.25 m/s over 0.3 s)
+  const BRAKE = 0.15;
+  const beltRun = (t) => {
+    if (t < tLoads) return run(t);
+    const x = Math.min(1, (t - tLoads) / BRAKE);
+    const brake = 0.55 * BRAKE * (1 - Math.pow(1 - x, 3)) / 3;
+    const c = Math.max(0, t - tLoads - 0.5), R = 0.3;
+    const creep = 0.25 * (c < R ? c * c / (2 * R) : c - R / 2);
+    return run(tLoads) + brake + creep;
+  };
   return {
     name: 's10-loads', from: P.from, to: P.to,
     frag: STUDIO_GLSL + S0910_GLSL + /* glsl */ `
@@ -216,8 +229,8 @@ vec3 shade(vec2 fc) {
     camera: loadsCamera(P),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
-      // the belt stops dead on the drop, then creeps on
-      u.uRun.value = t < tLoads ? run(t) : run(tLoads) + 0.25 * Math.max(0, t - tLoads - 0.5);
+      // the belt brakes hard on the drop (a 9-frame deceleration, no frame jolt), then creeps on
+      u.uRun.value = beltRun(t);
       const W = wrist(t);
       setV(u, 'uArmS', SH);
       setV(u, 'uArmE', elbow(SH, [W[0], W[1] + 0.14, W[2]], 0.85, 0.8));
