@@ -4,9 +4,9 @@
 // corrupts, "That your fathers" is typed into a system log at the left in mono, and "TRIED TO
 // KILL" interrupts as a harsh system override: a magenta header bar snaps across and the words
 // hit huge in hot magenta, TRIED and TO voltage-flickering, KILL glitch-cut on the hit.
-import { linesFrom, term, volt, glitch, dossier, arm, paint, measure, note, outFade, clamp01, ease, VOICES, carry } from '/song/lib/type.js';
+import { linesFrom, term, volt, glitch, arm, paint, measure, note, outFade, clamp01, ease, VOICES, project } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
-import { prophetTimes } from '/song/scenes/s07-prophets.js';
+import { prophetTimes, prophetsCamera, bustX, PLH } from '/song/scenes/s07-prophets.js';
 
 const [L1, L2] = linesFrom('You honor prophets', 'That your fathers tried to kill');
 
@@ -27,12 +27,14 @@ function laurel(ctx, cx, cy, r, side, a) {
 
 export default (P) => {
   const { tB } = prophetTimes();
+  const cam = prophetsCamera(P.from, P.to);
+  // plinth plates under the two nearest busts (secondary, mono): the tribute, then the record
+  const PLATES = [[3, 'RESEARCHER 03  ·  WARNED', 'TERMINATED'], [4, 'ENGINEER 05  ·  WARNED', 'SILENCED  ·  NDA']];
   return {
     textSize: [3840, 2160],
     shade: 0.9,
     textPlane(t, c) { return cameraPlane(c, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
-      carry(ctx, t, P);   // "To build your little empire": EMPIRE is sung across the cut
       // ---- tribute copy
       const last = L1.words[L1.words.length - 1];
       const f1 = clamp01((t - (L1.words[0].start - 0.3)) / 0.3) * outFade(t, Math.max(tB, last.end + 0.2), Math.max(tB, last.end + 0.2) + 0.25);
@@ -41,6 +43,7 @@ export default (P) => {
         const adv = L1.words.map((w) => measure(ctx, w.w, px, { voice: v }));
         const total = adv.reduce((a, b) => a + b, 0) - px * 0.26 + px * 0.3;
         let x = 1920 - total / 2;
+        note(ctx, 'IN  MEMORIAM', 1920, y - px - 70, { px: 40, align: 'center', color: '214, 222, 240', alpha: 0.8 * f1 });
         laurel(ctx, x - 150, y - px * 0.4, 150, 1, f1);
         laurel(ctx, x + total + 150, y - px * 0.4, 150, -1, f1);
         L1.words.forEach((w, i) => {
@@ -48,6 +51,19 @@ export default (P) => {
           if (a > 0.002) paint(ctx, w.w, x, y, px, { voice: v, alpha: a, ground: 'dark' });
           x += adv[i] + px * 0.15;
         });
+      }
+      // ---- plinth plates: pinned to the plinth faces; they flip on "That"; gone before the override header
+      {
+        const [, , , tried] = L2.words;
+        const pa = clamp01((t - (P.from + 0.3)) / 0.3) * outFade(t, tried.start - 0.45, tried.start - 0.25);
+        if (pa > 0.002) {
+          const c = cam(t);
+          for (const [i, a, b] of PLATES) {
+            const q = project(c, [bustX(i), PLH - 0.16, 0.205]);
+            const flip = t >= tB;
+            note(ctx, flip ? b : a, q.x, q.y, { px: 34, align: 'center', color: flip ? '255, 150, 190' : '214, 222, 240', alpha: 0.82 * pa });
+          }
+        }
       }
       // ---- the override
       const f2 = outFade(t, P.to - 0.25, P.to);

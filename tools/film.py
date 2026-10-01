@@ -35,8 +35,12 @@ for i, s in enumerate(starts):
         ends = [l['end'] for l in lines if l['end'] <= nxt + 0.3]
         starts[i] = (max(ends) if ends else 0) + 0.4
 def snap(t):
-    ends = [l['end'] for l in lines if l['end'] <= t + 0.001]; lo = (max(ends) if ends else 0) + 0.02
-    sts = [l['start'] for l in lines if l['start'] >= t - 0.001]; hi = (min(sts) if sts else 1e9) - 0.12
+    # v4: never cut while the previous line is still being sung: the cut lands at least 0.2 s after
+    # its last word (when the next line allows), so no word has to be carried across a cut
+    sts = [l['start'] for l in lines if l['start'] >= t - 0.001]; nxt = (min(sts) if sts else 1e9)
+    ends = [l['end'] for l in lines if l['end'] <= nxt + 0.001]; prev = (max(ends) if ends else 0)
+    lo = min(prev + 0.2, nxt - 0.04); hi = max(lo, nxt - 0.12)
+    t = max(t, lo)
     c = [b for b in beats if lo <= b <= hi and abs(b - t) < 0.4]
     b = min(c, key=lambda x: abs(x - t)) if c else t
     return round(round(b * 60) / 60, 4)

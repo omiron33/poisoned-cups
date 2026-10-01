@@ -10,7 +10,7 @@ import { grade, rgb, ease, clamp, linesFrom, spring } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { CUP_GLSL } from '/song/lib/x-cup.js';
-import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-a.js';
+import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-v4-hall.js';
 
 export const PH = 0.42;
 export const LEVEL = 0.9;

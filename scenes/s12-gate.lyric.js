@@ -52,9 +52,9 @@ export default (P) => ({
     });
     // the tiers down the left wall
     const cw = 640, ch = 200;
-    card(ctx, t, W12.sell, { x: 240, y: 640, w: cw, h: ch, tier: 'BASIC', price: '$9 / MO', locked });
-    card(ctx, t, W12.sell + 0.35, { x: 240, y: 880, w: cw, h: ch, tier: 'PRO', price: '$49 / MO', locked });
-    card(ctx, t, W12.gate1, { x: 240, y: 1120, w: cw, h: ch, tier: 'ELITE', price: '$4,900', badge: 'CLEARED ✓'.replace(' ✓', ''), locked });
+    card(ctx, t, W12.sell, { x: 240, y: 640, w: cw, h: ch, tier: 'BASIC MODEL', price: '$9 / MO', locked });
+    card(ctx, t, W12.sell + 0.35, { x: 240, y: 880, w: cw, h: ch, tier: 'PRO MODEL', price: '$49 / MO', locked });
+    card(ctx, t, W12.gate1, { x: 240, y: 1120, w: cw, h: ch, tier: 'FRONTIER', price: '$4,900 / MO', badge: 'CLEARED ✓'.replace(' ✓', ''), locked });
     // the lock panel on the right wall
     if (t >= W12.guard) {
       const k = spring(t, W12.guard, 0.3, 0.2);

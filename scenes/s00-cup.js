@@ -9,7 +9,7 @@ import { grade, rgb, orbit, nextBeat, ease, clamp, spring } from '/song/lib/look
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { CUP_GLSL } from '/song/lib/x-cup.js';
-import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-a.js';
+import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-v4-hall.js';
 
 export const PLINTH_H = 0.42;
 export const leakTime = (P) => nextBeat(P.from + (P.to - P.from) * 0.62);

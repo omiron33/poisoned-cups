@@ -1,9 +1,11 @@
 // 08 · "Brood of vipers / Do you think I can't see still?"  (v2, hook rung 2: the surveillance cobras)
-// Cable-vipers stand upright out of two lit network trenches in a purple data hall, every head a
-// camera lens, and above the rack line a city-scale sensor eye (a lidar iris with a sweeping scan
+// v4: cobras (lib/x-v4-snake.js snakeRear, hood 1) rear out of two lit network trenches in a purple
+// data hall: wedge heads with slit eyes, hoods spread, a cold-white camera-iris marking printed on the
+// back of each hood (the surveillance idea lives on the hood; the head stays a snake). They sway
+// together with the scan. Above the rack line a city-scale sensor eye (a lidar iris with a sweeping scan
 // line) watches everything. Digital noise crawls over the frame. On "I" a warm light falls from
 // above (no lamp, no housing: plain light) and the noise dies inside it; it moves once and on
-// "see" it stops on one viper, and every hidden cable path under the floor lights up from its
+// "see" it stops on one cobra, which rears back with its hood flaring, and every hidden cable path under the floor lights up from its
 // base. At the end the light withdraws and the camera plunges overhead onto the exposed paths,
 // which go cold and square into a grid (s09 opens on a filter mesh).
 import { ease, grade, rgb, orbit, linesAt, clamp01, mix, spring } from '/song/lib/look.js';
@@ -11,10 +13,24 @@ import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
 import { XB_GLSL } from '/song/lib/x-b.js';
+import { SNAKE_GLSL } from '/song/lib/x-v4-snake.js';
 
-// the viper the light finds: base, heading, length, rise (kept in step with the GLSL below)
-const V0 = { b: [0.3, 0.08, 0.3], yaw: -2.2, L: 1.3, lift: 0.7 };
-const HEAD0 = [V0.b[0] + Math.cos(V0.yaw) * V0.L, V0.lift + 0.1, V0.b[2] + Math.sin(V0.yaw) * V0.L];
+// the cobras: where each rises out of a trench (x, z), heading, length, radius, head height, phase.
+// Index 0 is the one the light finds. base = the tail end of the ground body (snakeRear's frame).
+const COBRAS = [
+  { rise: [-0.35, 0.3], yaw: 0.8, L: 2.5, R: 0.095, h: 1.0, ph: 0.0 },
+  { rise: [-1.35, 0.3], yaw: 1.95, L: 2.3, R: 0.085, h: 0.85, ph: 1.3 },
+  { rise: [1.05, 0.3], yaw: 0.85, L: 2.5, R: 0.09, h: 1.05, ph: 2.1 },
+  { rise: [1.35, -0.95], yaw: -0.15, L: 2.3, R: 0.08, h: 0.9, ph: 2.9 },
+  { rise: [-0.5, -0.95], yaw: -2.95, L: 2.6, R: 0.09, h: 1.2, ph: 3.7 },
+  { rise: [-1.8, -0.95], yaw: 1.9, L: 2.3, R: 0.08, h: 1.0, ph: 4.4 },
+].map((c) => {
+  const Lg = Math.max(c.L - 1.45 * c.h, 0.35 * c.L), dx = Math.cos(c.yaw), dz = Math.sin(c.yaw);
+  return { ...c, Lg, base: [c.rise[0] - dx * Lg, 0, c.rise[1] - dz * Lg], head: [c.rise[0] + dx * 0.42 * c.h, c.h + 0.05, c.rise[1] + dz * 0.42 * c.h] };
+});
+const V0 = { b: [COBRAS[0].rise[0], 0, COBRAS[0].rise[1]] };
+const HEAD0 = COBRAS[0].head;
+const f3 = (a) => a.map((x) => x.toFixed(3)).join(', ');
 
 export default (P) => {
   const t0 = P.from;
@@ -43,34 +59,32 @@ export default (P) => {
   const tearAt = (t) => [tB, tV].reduce((a, h) => Math.max(a, t >= h && t < h + 0.1 ? 1 - (t - h) / 0.1 : 0), 0);
   return {
     name: 's08-see', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + CYBER_GLSL + VIPER_GLSL + XB_GLSL + /* glsl */ `
+    frag: STUDIO_GLSL + CYBER_GLSL + VIPER_GLSL + XB_GLSL + SNAKE_GLSL + /* glsl */ `
 uniform vec4 uBeam;   // x, z, radius, on
-uniform float uReveal, uCold, uNoise, uTear;
+uniform float uReveal, uCold, uNoise, uTear, uHero;
 const vec2 VB = vec2(${V0.b[0].toFixed(3)}, ${V0.b[2].toFixed(3)});
 float trench(vec3 p, float z) { return sdBox(p - vec3(0.0, 0.0, z), vec3(4.0, 0.012, 0.11)); }
 float mapObj(vec3 p, out int id) {
   id = 2;
   float d = sdRacks(p, -3.2, 0.64, 2.3, 0.04, 8.0);
   float v = min(trench(p, 0.3), trench(p, -0.95)); if (v < d) { d = v; id = 3; }
-  float b = length(p - vec3(0, 0.6, -0.3)) - 2.4;
+  float b = length(p - vec3(0, 0.6, -0.3)) - 2.7;
   if (b > d) return d;
   if (b > 0.25) return min(d, b);
   float T = uTime;
-  gVipLens = 1.0;
-  v = viperAt(p, vec3(${V0.b.join(', ')}), ${V0.yaw.toFixed(3)}, ${V0.L.toFixed(3)}, 0.075, 0.1, 5.0, T * 0.9, ${V0.lift.toFixed(3)}, 3.0);  if (v < d) { d = v; id = 1; keepViper(); }
-  v = viperAt(p, vec3(-1.2, 0.07, 0.3), 2.6, 1.2, 0.07, 0.12, 5.5, T * 1.1 + 1.0, 0.75, 3.0);   if (v < d) { d = v; id = 1; keepViper(); }
-  v = viperAt(p, vec3(1.1, 0.07, 0.3), -0.6, 1.3, 0.07, 0.1, 5.0, T * 0.8 + 2.0, 1.05, 3.0);  if (v < d) { d = v; id = 1; keepViper(); }
-  v = viperAt(p, vec3(1.3, 0.07, -0.95), 0.4, 1.1, 0.065, 0.12, 6.0, T * 1.2 + 3.0, 0.8, 3.0);   if (v < d) { d = v; id = 1; keepViper(); }
-  v = viperAt(p, vec3(-0.5, 0.07, -0.95), -1.9, 1.2, 0.07, 0.1, 5.0, T * 1.0 + 4.0, 1.15, 3.0); if (v < d) { d = v; id = 1; keepViper(); }
-  v = viperAt(p, vec3(-1.7, 0.07, -0.95), 3.6, 1.1, 0.065, 0.1, 5.5, T * 0.9 + 5.0, 0.95, 3.0);  if (v < d) { d = v; id = 1; keepViper(); }
-  gVipLens = 0.0;
+  // one slow sway for the whole brood, in step with the sensor's scan (2.2 rad/s)
+  float sway = 0.07 * sin(T * 2.2 * 0.5);
+  gSkIris = 0.5;
+${COBRAS.map((c, i) => `  v = snakeRear(p, vec3(${f3(c.base)}), ${c.yaw.toFixed(3)} + sway${i === 0 ? ' * (1.0 - uHero)' : ''}, ${c.L.toFixed(3)}, ${c.R.toFixed(3)}, ${c.h.toFixed(3)}${i === 0 ? ' + 0.14 * uHero' : ''}, ${c.ph.toFixed(2)}, ${i === 0 ? '0.25 * uHero' : '0.0'}, ${i === 0 ? '0.9 + 0.35 * uHero' : '1.2'});  if (v < d) { d = v; id = 1; keepSnake(); }`).join('\n')}
   return d;
 }
 Mat material(int id, vec3 p, vec3 n) {
   if (id == 1) {
-    Mat m = viperMat(0.0);
-    // the lens glass glows a faint surveillance red-magenta while the eye watches
-    if (gV.w > 1.5 && gV.w < 2.5) m.emit = vec3(1.4, 0.05, 0.6) * (1.0 - uReveal) * 0.8;
+    gSkIris = 0.5;
+    Mat m = snakeMat(p, n, 0.0);
+    // a cold violet edge so each cobra's silhouette reads against the dark racks
+    float fr = pow(1.0 - sat(dot(n, normalize(uCamPos - p))), 3.0);
+    m.emit += vec3(0.35, 0.28, 0.7) * fr * (gSk.z > 1.5 && gSk.z < 2.5 ? 0.0 : 1.0);
     return m;
   }
   if (id == 3) {
@@ -155,7 +169,7 @@ vec3 shade(vec2 fc) {
       uKeyDir: [-0.3, 1.0, 0.45], uKeyCol: [2.4, 2.5, 3.1], uKeySize: 0.5, uExpo: 1.35,
       uRimA: [1.8, 0.8, 2.8], uRimB: [0.5, 2.6, 0.8],
       uHaze: 0.03, uHazeCol: [0.03, 0.025, 0.045],
-      uBeam: [0, 0, 0.4, 0], uReveal: 0, uCold: 0, uNoise: 1, uTear: 0,
+      uBeam: [0, 0, 0.4, 0], uReveal: 0, uCold: 0, uNoise: 1, uTear: 0, uHero: 0,
     },
     camera,
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
@@ -166,6 +180,7 @@ vec3 shade(vec2 fc) {
       u.uCold.value = ease.inOut3((t - tOut) / 0.8);
       u.uNoise.value = 1 - 0.8 * ease.out3((t - tI) / 0.2);
       u.uTear.value = tearAt(t);
+      u.uHero.value = spring(t, tSee - 0.04, 0.5, 0.3);
       u.uP2.value = [-1.0, 1.8, 1.6]; u.uP2c.value = [3.0, 2.6, 4.2];
       u.uP1.value = [b.x, 3.2, b.z]; u.uP1c.value = [6 * b.on, 5.0 * b.on, 3.6 * b.on];
     },

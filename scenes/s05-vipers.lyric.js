@@ -80,7 +80,7 @@ export default (P) => {
           ctx.restore();
         }
       }
-      note(ctx, 'NEST 03  ·  CAT6 BRAID  ·  DORMANT  ·  MATT 23:33', 3600, 250, { px: 40, align: 'right', alpha: 0.7 * out });
+      note(ctx, 'NEST 03  ·  5 AGENTS  ·  DORMANT  ·  MATT 23:33', 3600, 250, { px: 40, align: 'right', alpha: 0.7 * out });
     },
   };
 };

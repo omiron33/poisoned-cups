@@ -1,8 +1,9 @@
 // 13 · "Brood of vipers / Who warned you from the fire?"  (v2, hook rung 3: the gate overheats)
 // The access gate from s12, seen head on down its neon corridor: two steel gate pillars with a
 // lintel, a lattice of laser geometry strung between them, amber warning beacons. The corridor is
-// overheating. Cable-vipers wind up both pillars in helices, climbing as the line goes on, heads
-// rearing off the top. Judgment runs DOWN the circuitry: the pillars' traces go white-hot from the
+// overheating. v4: a real snake (lib/x-v4-snake.js wrap) winds up each pillar, climbing as the line
+// goes on, its head rearing off the top, jaws parted, tongue flicking; on "fire?" both heads strike
+// toward the camera at full gape, fangs out, and the snap zoom lands on the open mouths. Judgment runs DOWN the circuitry: the pillars' traces go white-hot from the
 // lintel downward, the floor under the gate glows, the lattice burns from red to white. A reveal
 // tilt climbs with the vipers; punches on the kicks; a hard snap zoom on "fire?".
 import { ease, grade, rgb, linesAt, clamp01, spring, mix } from '/song/lib/look.js';
@@ -10,6 +11,8 @@ import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
 import { XB_GLSL } from '/song/lib/x-b.js';
+import { SNAKE_GLSL } from '/song/lib/x-v4-snake.js';
+import { S13_GLSL } from '/song/lib/x-v4s-s13.js';
 
 export default (P) => {
   const t0 = P.from;
@@ -27,14 +30,14 @@ export default (P) => {
     const d = 0.008 * (Math.sin(t * 0.9) + 0.5 * Math.sin(t * 2.3 + 1.0));
     return {
       pos: [0.15 + d, 0.45 + 0.25 * tilt, 4.3 - 0.35 * pB - 0.35 * pV - 0.4 * tilt],
-      target: [0.0 + d, mix(0.9, 1.75, tilt), 0.0],
+      target: [0.0 + d, mix(mix(0.9, 1.75, tilt), 2.1, zf), mix(0.0, 0.45, zf)],
       fov: mix(44, 32, zf), roll: -0.01 + 0.02 * pV - 0.025 * zf,
     };
   };
   return {
     name: 's13-vipers2', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + CYBER_GLSL + VIPER_GLSL + XB_GLSL + /* glsl */ `
-uniform float uClimb, uHeat, uTear;
+    frag: STUDIO_GLSL + CYBER_GLSL + VIPER_GLSL + XB_GLSL + SNAKE_GLSL + S13_GLSL + /* glsl */ `
+uniform float uClimb, uHeat, uTear, uStrike;
 const float PX = 0.95, PR = 0.2, PH = 3.0;
 float pillar(vec3 p) {
   vec3 q = vec3(abs(p.x) - PX, p.y, p.z);
@@ -48,21 +51,27 @@ float mapObj(vec3 p, out int id) {
   float v = sdRoundBox(p - vec3(0.0, PH + 0.12, 0.0), vec3(PX + 0.35, 0.14, 0.28), 0.01); if (v < d) { d = v; id = 3; }
   // the corridor walls, far back, with neon strips
   v = abs(abs(p.x) - 2.7) - 0.05; if (v < d) { d = v; id = 4; }
-  float b = length(vec2(abs(p.x) - PX, p.z)) - 0.8;
+  float b = length(vec2(abs(p.x) - PX, p.z)) - 1.1;
   if (b > 0.3) return min(d, b);
   float T = uTime;
-  // one viper round each pillar, climbing; the right one wound the other way round
+  // one snake round each pillar, climbing (the helix turns as it climbs so the head stays aimed at
+  // the camera); the right one wound the other way round. On "fire?" both strike at full gape.
   float y1 = min(uClimb, 2.6);
+  float gp = mix(0.3, 1.0, uStrike);
+  float H = 0.62, th = (y1 - 0.05) / H * 6.2831853;
   vec3 q = p - vec3(-PX, 0.0, 0.0);
-  v = helixViper(q, PR + 0.07, 0.07, 0.62, 0.05, y1, -1.2 + T * 0.4, 0.38, 0.26); if (v < d) { d = v; id = 1; keepViper(); }
+  v = snakeWrapStrike(q, vec3(0.0), PR, 0.08, H, 0.05, y1, 1.35 - th, 0.4, gp, uStrike); if (v < d) { d = v; id = 1; keepSnake(); }
   q = p - vec3(PX, 0.0, 0.0); q.x = -q.x;
-  v = helixViper(q, PR + 0.065, 0.065, 0.56, 0.05, y1 * 0.94, 2.0 + T * 0.4, 0.36, 0.24); if (v < d) { d = v; id = 1; keepViper(); }
+  float H2 = 0.56, th2 = (y1 * 0.94 - 0.05) / H2 * 6.2831853;
+  v = snakeWrapStrike(q, vec3(0.0), PR, 0.075, H2, 0.05, y1 * 0.94, 1.35 - th2, 0.38, gp, uStrike); if (v < d) { d = v; id = 1; keepSnake(); }
   return d;
 }
 Mat material(int id, vec3 p, vec3 n) {
   if (id == 1) {
-    Mat m = viperMat(0.0);
-    m.emit += vec3(2.2, 0.5, 0.08) * uHeat * uHeat * pulseAlong(gV.x, 0.8, 5.0) * (1.0 - min(gV.w, 1.0)) * 0.6;
+    Mat m = snakeMat(p, n, 0.0);
+    // the heat runs down the spine as the gate overheats
+    float fr = pow(1.0 - sat(dot(n, normalize(uCamPos - p))), 3.0);
+    m.emit += vec3(0.5, 0.25, 0.6) * fr * 0.8 + vec3(2.2, 0.5, 0.08) * uHeat * uHeat * fr * 0.6;
     return m;
   }
   if (id == 4) {
@@ -130,13 +139,14 @@ vec3 shade(vec2 fc) {
       uKeyDir: [0.2, 1.0, 0.6], uKeyCol: [2.0, 2.1, 2.5], uKeySize: 0.45, uExpo: 1.2,
       uRimA: [2.2, 0.7, 2.6], uRimB: [2.6, 0.9, 0.3],
       uHaze: 0.04, uHazeCol: [0.05, 0.02, 0.04],
-      uClimb: 0.4, uHeat: 0.2, uTear: 0,
+      uClimb: 0.4, uHeat: 0.2, uTear: 0, uStrike: 0,
     },
     camera,
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
     update(t, u) {
       const h = heatAt(t);
       u.uClimb.value = climbAt(t); u.uHeat.value = h; u.uTear.value = tearAt(t);
+      u.uStrike.value = spring(t, tF - 0.06, 0.32, 0.12);
       const fl = (0.85 + 0.15 * Math.sin(t * 21.0) * Math.sin(t * 6.1)) * h;
       u.uP1.value = [0, 1.6, -0.9]; u.uP1c.value = [9 * fl, 2.2 * fl, 0.5 * fl];
       u.uP2.value = [0, 2.6, 1.8]; u.uP2c.value = [2.0 + 2 * h, 1.2, 2.4 - h];

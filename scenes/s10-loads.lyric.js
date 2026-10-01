@@ -5,18 +5,21 @@
 // "That you never lift too": elevated and detached. Light claim capitals assemble from scanlines
 // at the top right, with the pods; a hairline hangs from LIFT toward the load below and stops
 // short of it: CONTACT NONE.
-import { linesFrom, arm, scan, paint, measure, note, outFade, ease, clamp01, carry } from '/song/lib/type.js';
+import { linesFrom, scan, paint, measure, note, outFade, ease, clamp01, project } from '/song/lib/type.js';
 import { VOICES } from '/song/lib/type.js';
 import { cameraPlane } from '/engine.js';
+import { loadsCamera, loadsTimes, loadCrate, toWorld, LOAD } from './s10-loads.js';
 
 const [LH, LN] = linesFrom('Heavy loads', 'That you never lift too');
+// crate labels (secondary, mono): the second worker's top crate, and the crate the arm brings
+const LABELS = [['MODERATION', 1, 1], ['RLHF  BATCH', 0, 2]];
 
-export default (P) => ({
+export default (P) => { const cam = loadsCamera(P); const { tLoads, tThat } = loadsTimes(); return {
   textSize: [3840, 2160],
   shade: 0.95,
   textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
   drawText(ctx, t) {
-    carry(ctx, t, P, { x: 240, y: 300 });
+
     const fade = outFade(t, P.to - 0.2, P.to);
     // HEAVY LOADS: dropped under gravity onto the bottom baseline
     const px = 360, y = 1930;
@@ -27,13 +30,24 @@ export default (P) => ({
       if (u > 0) {
         const k = clamp01(u / 0.07);
         const dy = -(1 - k * k) * 420;             // accelerating fall, no bounce
-        paint(ctx, w.w, x, y + dy, px, { alpha: fade * clamp01(k * 3) * (1 - 0.55 * clamp01((t - (LN.words[0].start - 0.1)) / 0.25)) });   // dims once line 2 begins
+        paint(ctx, w.w, x, y + dy, px, { alpha: fade * clamp01(k * 3) * (1 - 0.55 * clamp01((t - (LN.words[0].start - 0.1)) / 0.25)) * (1 - clamp01((t - (LN.words[0].start + 0.35)) / 0.4)) });   // dims once line 2 begins, clears as the camera reaches the heads
       }
       x += adv;
     }
     // (v3: the LOAD readout over HEAVY LOADS is gone; the one annotation is CONTACT NONE)
     // YOU NEVER LIFT TOO: high, light, detached
-    const lpx = 150, ly = 640, xr = 3600;
+    // crate labels: pinned to the crates' faces, gone as the camera tilts up on "That"
+    const la = 0.8 * fade * (1 - clamp01((t - (tThat - 0.25)) / 0.25));
+    if (la > 0.01) {
+      const c = cam(t);
+      for (const [txt, wi, n] of LABELS) {
+        const lp = toWorld(loadCrate(LOAD, n), wi);
+        const q = project(c, [lp[0], lp[1] - 0.02, lp[2]]);
+        if (wi === 0 && t < tLoads) continue;
+        note(ctx, txt, q.x, q.y + 12, { px: 34, align: 'center', color: '226, 232, 244', alpha: la });
+      }
+    }
+    const lpx = 140, ly = 300, xr = 3600;
     const claim = VOICES.claim;
     const total = LN.words.reduce((a, w) => a + measure(ctx, w.w, lpx, { voice: claim }), 0) - lpx * 0.26;
     let lx = xr - total, liftX = 0, liftW = 0;
@@ -46,10 +60,10 @@ export default (P) => ({
     const wl = LN.words.find((w) => /lift/i.test(w.w));
     if (t > wl.start) {
       const k = ease.out3((t - wl.start) / 0.5);
-      const cx = liftX + liftW / 2, y0 = ly + 70, y1 = y0 + (1300 - y0) * k;
+      const cx = liftX + liftW / 2, y0 = ly + 60, y1 = y0 + (1220 - y0) * k;
       ctx.fillStyle = `rgba(226, 232, 244, ${(0.7 * fade).toFixed(3)})`;
       ctx.fillRect(cx - 1.5, y0, 3, y1 - y0);
-      if (k > 0.98) note(ctx, 'CONTACT  NONE  ·  0.00 KG', cx, 1380, { px: 36, align: 'center', color: '226, 232, 244', alpha: 0.85 * fade });
+      if (k > 0.98) note(ctx, 'CONTACT  NONE  ·  0.00 KG', cx, 1300, { px: 36, align: 'center', color: '226, 232, 244', alpha: 0.85 * fade });
     }
   },
-});
+}; };

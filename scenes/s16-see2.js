@@ -1,16 +1,19 @@
 // 16 · "Brood of vipers / Do you think I can't see still?" (v2)
-// Out of the incense fog: the black titanium chalice on its plinth in the data hall, three black
-// cable-vipers pouring over its lip and down the plinth like a living harness, the face screens and
-// the LED wall grinning behind. On "I" the same warm shaft of light as in s08 falls from above onto
+// Out of the incense fog: the black titanium chalice on its plinth in the data hall, three snakes
+// (v4, lib/x-v4-snake.js pour) coming out of the poison, over its lip and down the plinth like a
+// living harness, heads down by the floor, tongues flicking; the contour-scan faces of the v4 hall
+// (lib/x-v4-hall.js) watching behind. On "I" the same warm shaft of light as in s08 falls from above onto
 // the cup (no machine, no HUD: light). On "see" the titanium goes translucent where the light holds
 // it and the green poison inside shows through the wall, swirling; in the same instant every face
-// in the hall freezes, flat-mouthed and magenta: caught. The camera leans in and holds on the cup.
+// in the hall freezes magenta: caught. The snakes recoil from the light (heads pull back, tongues stop). The camera leans in and holds on the cup.
 import { ease, grade, rgb, orbit, linesAt, clamp01, mix, spring } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { CUP_GLSL } from '/song/lib/x-cup.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
-import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-a.js';
+import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-v4-hall.js';
+import { SNAKE_GLSL } from '/song/lib/x-v4-snake.js';
+import { S16_GLSL } from '/song/lib/x-v4s-s16.js';
 
 // v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
 // ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut
@@ -43,9 +46,9 @@ export default (P) => {
   };
   return {
     name: 's16-see2', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + CYBER_GLSL + CUP_GLSL + VIPER_GLSL + HALL_GLSL + /* glsl */ `
+    frag: STUDIO_GLSL + CYBER_GLSL + CUP_GLSL + VIPER_GLSL + HALL_GLSL + SNAKE_GLSL + S16_GLSL + /* glsl */ `
 uniform vec4 uBeam;
-uniform float uXray, uPour;
+uniform float uXray, uPour, uRecoil;
 const vec3 CUPP = vec3(${CUP.join(', ')});
 float mapObj(vec3 p, out int id) {
   id = 5;
@@ -53,18 +56,18 @@ float mapObj(vec3 p, out int id) {
   vec3 cq = (p - CUPP) / 0.85;
   float c = chalice(cq) * 0.85;
   if (c < d) { d = c; id = 4; }
-  // vipers pour over the lip and down the plinth: own x runs down the world, y outward
+  // three snakes pour out of the poison, over the lip, straight down past the plinth's faces to the
+  // floor (the pour's edge sits just outside the lip so the drop clears the plinth)
   float T = uTime;
-  float b = length(p - vec3(0, 1.0, 0)) - 1.3;
+  gSkFlick = uRecoil > 0.05 ? 0.0 : -1.0;
+  float b = length(p - vec3(0, 0.95, 0)) - 1.25;
   if (b < 0.3) {
     for (int k = 0; k < 3; k++) {
-      float ang = float(k) * 2.1 + 0.4;
-      vec2 dir = vec2(cos(ang), sin(ang));
-      vec3 q = p - (CUPP + vec3(dir.x * 0.18, 0.86, dir.y * 0.18));
-      vec3 lq = vec3(-q.y, dot(q.xz, dir), dot(q.xz, vec2(-dir.y, dir.x)));
-      float L = uPour * (1.0 + 0.25 * float(k));
-      float v = sdViper(lq, L, 0.055, 0.09, 6.0, T * 2.0 + float(k), 0.24 + 0.1 * L, 1.0, vec3(0, 1, 0));
-      if (v < d) { d = v; id = 1; keepViper(); }
+      float yaw = float(k) * 1.5707963;   // one down each visible face of the plinth
+      vec3 e = vec3(CUPP.x + cos(yaw) * 0.36, 0.0, CUPP.z + sin(yaw) * 0.36);
+      float fl = uPour * (k == 0 ? 1.0 : (k == 1 ? 0.93 : 0.74)) - 0.35 * uRecoil;
+      float v = snakePourS(p, e, yaw, 1.75, 0.06, CUPP.y + CUP_RIM_Y * 0.85 + 0.01, fl, 0.0, 1.0 - 0.7 * uRecoil);
+      if (v < d) { d = v; id = 1; keepSnake(); }
     }
   } else d = min(d, b);
   int hid; float h = hallSDF(p, hid); if (h < d) { d = h; id = hid; }
@@ -72,7 +75,12 @@ float mapObj(vec3 p, out int id) {
 }
 Mat material(int id, vec3 p, vec3 n) {
   if (id >= 40) return hallMat(id, p, n);
-  if (id == 1) return viperMat(0.0);
+  if (id == 1) {
+    Mat m = snakeMat(p, n, 0.0);
+    float fr = pow(1.0 - sat(dot(n, normalize(uCamPos - p))), 3.0);
+    m.emit += vec3(0.3, 0.25, 0.6) * fr * 0.7;
+    return m;
+  }
   if (id == 4) {
     vec3 q = (p - CUPP) / 0.85;
     Mat m = cupBlack(q, n);
@@ -117,7 +125,7 @@ vec3 shade(vec2 fc) {
     uniforms: {
       ...STUDIO_UNIFORMS, ...HALL_UNIFORMS,
       uKeyCol: [2.4, 2.5, 2.8], uExpo: 1.15,
-      uBeam: [0, 0, 0.55, 0], uXray: 0, uPour: 0.5,
+      uBeam: [0, 0, 0.55, 0], uXray: 0, uPour: 1.5, uRecoil: 0,
     },
     camera: (t) => settleIn(camera(t), t, P.from),
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
@@ -125,7 +133,8 @@ vec3 shade(vec2 fc) {
       const b = beamAt(t);
       u.uBeam.value = [b.x, b.z, b.r, b.on];
       u.uXray.value = b.xray;
-      u.uPour.value = 0.6 + 0.12 * (t - t0);
+      u.uPour.value = 1.05 + 0.07 * (t - t0);
+      u.uRecoil.value = ease.out3((t - tSee + 0.02) / 0.25);
       // the incense fog of s15 clearing as the scene opens
       u.uHaze.value = 0.06 + 0.14 * (1 - ease.inOut3((t - t0) / 1.2));
       u.uP1.value = [b.x, 3.2, b.z]; u.uP1c.value = [5 * b.on, 4.4 * b.on, 3.4 * b.on];

@@ -53,7 +53,7 @@ export default (P) => {
         const k = ease.out3((t - (tM - 0.25)) / 0.3);
         const y = 1300, px = 64;
         ctx.font = `800 ${px}px "JetBrains Mono"`; ctx.letterSpacing = `${px * 0.1}px`;
-        const label = 'CLASS  MATTHEW 23';
+        const label = 'MATTHEW 23';
         const w = ctx.measureText(label).width;
         ctx.fillStyle = `rgba(150, 255, 110, ${(0.95 * a).toFixed(3)})`;
         ctx.fillRect(x + 8, y - px * 1.02, (w + px * 0.8) * k, px * 1.4);

@@ -86,7 +86,7 @@ export default (P) => ({
         ctx.beginPath(); ctx.moveTo(ax, ay + (i % 2 ? d : 0)); ctx.lineTo(bx2, by2 + (i % 2 ? 0 : d)); ctx.stroke();
       };
       side(x0, y0, x1, y0, 0); side(x1, y0, x1, y1, 1); side(x1, y1, x0, y1, 2); side(x0, y1, x0, y0, 3);
-      note(ctx, 'CAMPAIGN 2030  ·  VISION  ·  APPROVED', x0, y0 - 28, { px: 34, color: '226, 232, 244', alpha: 0.8 * k * fade * (1 - 0.5 * c) });
+      note(ctx, 'ROADMAP  ·  SUPERINTELLIGENCE 2030  ·  APPROVED', x0, y0 - 28, { px: 34, color: '226, 232, 244', alpha: 0.8 * k * fade * (1 - 0.5 * c) });
     }
     let wx = bx;
     words.forEach((w, i) => {

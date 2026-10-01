@@ -1,31 +1,25 @@
-// The words of s25-stones: written into the system's own materials. Each word burns on the surface
-// that lights for it (see SURF in the picture): The and stones on the pylons' access rails, will on a
-// server housing, speak on a dead screen, My high on the concrete back wall in gold-white (the one
-// stable, luminous word), and the held will on the floor slab. Each is mapped into the surface's
-// perspective (onSurface), so the camera's held steps carry them like the architecture they are.
-import { linesFrom, paint, measure, note, outFade, clamp01, ease, voiceOf, carry } from '/song/lib/type.js';
-import { fullFrame, onSurface } from '/song/lib/x-f.js';
-import { rig, SURF } from '/song/scenes/s25-stones.js';
+// The words of s25-stones (v4): fixed screen rows above the overthrow, one reading path:
+// THE STONES WILL / SPEAK MY on two rows high over the falling pylons, and the held WILL on the
+// bottom row over the crowd. MY is divine gold-white, the only gold, and never flashes; every other
+// word lands with a white burn flash. The falls are staged left, back and right in the band between
+// the rows, so no row sits over a falling pylon or the breach of light. LUKE 19:40 is a small mono
+// note under the second row, gone before the held "will". Mid-key to 149.5, then the words fade into
+// the white.
+import { linesFrom, paint, measure, note, outFade, clamp01, voiceOf } from '/song/lib/type.js';
+import { fullFrame } from '/song/lib/x-f.js';
 
 const [L] = linesFrom('The stones will speak');
 const PLAIN = voiceOf('the');
-const PX = 200;
-const lerp = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
-const blendCam = (a, b, k) => (k >= 1 ? b : { pos: lerp(a.pos, b.pos, k), target: lerp(a.target, b.target, k), fov: a.fov + (b.fov - a.fov) * k, roll: 0 });
 
 export default (P) => {
-  const R = rig(P);
+  const on = L.words.map((w) => w.start);
   return {
     textSize: [3840, 2160],
-    shade: 0.6,   // screen-fixed words now sit over the lit cracks: a firmer halo
+    shade: 0.8,   // a firm backing: the rows sit over the hall's dark upper wall and the faces
     textPlane(t, cam) { return fullFrame(cam); },
     drawText(ctx, t) {
-      carry(ctx, t, P);
-      const cam = R.camera(t);
-      const a = outFade(t, P.to - 0.1, P.to);
-      // placement audit: the words no longer ride the surfaces (the camera's steps carried them); they
-      // hold fixed screen places in the same reading path: THE STONES WILL / SPEAK MY / WILL
-      const ROWS = [[0, 1, 2], [3, 4], [5]], YS = [380, 800, 1840], PXS = [200, 200, 250];
+      const a = outFade(t, P.to - 0.37, P.to - 0.24);   // readable to 149.65 (will ends 149.50), gone before the white peaks
+      const ROWS = [[0, 1, 2], [3, 4], [5]], YS = [400, 680, 1860], PXS = [200, 200, 250];
       ROWS.forEach((row, r) => {
         const px = PXS[r], gap = px * 0.45;
         const vs = row.map((i) => (i === 4 ? voiceOf(L.words[i].w) : PLAIN));
@@ -36,14 +30,14 @@ export default (P) => {
           if (t >= w.start - 0.02) {
             const k = clamp01((t - w.start + 0.02) / 0.08);
             paint(ctx, w.w, x, YS[r], px, { voice, ground: 'dark', alpha: k * a, ink: isMy ? undefined : '255, 246, 234' });
-            // the burn: a white flash on the onset (never on My, which only brightens)
             const hot = Math.exp(-(t - w.start) * 9) * (isMy ? 0 : 1);
             if (hot > 0.02) paint(ctx, w.w, x, YS[r], px, { voice, ground: 'dark', ink: '255, 255, 255', alpha: hot * k * a });
           }
           x += ws[j] + gap;
         });
       });
-      note(ctx, 'LOT 25  ·  WITNESS  ·  THE SYSTEM TESTIFIES  ·  LUKE 19:40', 1920, 2010, { px: 38, ground: 'dark', align: 'center', alpha: 0.8 * a * outFade(t, R.on[5] - 0.3, R.on[5]) });
+      const na = 0.8 * clamp01((t - P.from - 0.1) / 0.25) * outFade(t, on[5] - 0.35, on[5] - 0.05);
+      if (na > 0.002) note(ctx, 'LUKE 19:40', 1920, 790, { px: 38, ground: 'dark', align: 'center', alpha: na });
     },
   };
 };

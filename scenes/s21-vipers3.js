@@ -1,10 +1,12 @@
 // 21 · "Brood of vipers / Who warned you from the fire?"  (v2, hook rung 4: the system in judgment)
 // The film's one smash cut into fire: the frame opens white-hot and settles on the whole city-
-// system burning. Behind a deep wall of flame the server-tower empire (s06) is lit from below;
-// either side, giant LED face screens (synthetic spokesperson faces) stare out over the fire and
-// glitch on the kicks; a lattice of conduits runs overhead. In front, three massive cable-vipers
-// rear in S-curves, black silhouettes cut against the glow. On "fire?" the fire leaps, the faces
-// go blind and the empire starts to sway (s22 topples it). Low camera, a slow push, hard punches.
+// system burning. Behind a deep wall of flame the empire of posts (s06's towers, lib/x-v4-post.js
+// empireMatPost) burns, its cards charring from the bottom; either side, giant screens carry
+// contour-scan spokesperson faces (lib/x-v4-head.js faceScan) that stare out over the fire and slip
+// on the kicks; a lattice of conduits runs overhead. In front, three massive snakes (v4,
+// lib/x-v4-snake.js rear, no hood) rear in S-curves, real heads in silhouette against the glow, slit
+// eyes hot magenta. On "fire?" the fire leaps, the snakes open their jaws toward the camera, the
+// faces go blind (their contour lines die) and the empire starts to sway (s22 topples it). Low camera, a slow push, hard punches.
 import { ease, grade, rgb, orbit, linesAt, clamp01, spring } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { FLAME_GLSL } from '/song/lib/flame.js';
@@ -12,8 +14,21 @@ import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { VIPER_GLSL } from '/song/lib/x-viper.js';
 import { XB_GLSL } from '/song/lib/x-b.js';
 import { EMPIRE_GLSL, empireUniforms, towerState } from '/song/lib/x-empire.js';
+import { POST_GLSL, POST_UNIFORMS } from '/song/lib/x-v4-post.js';
+import { HEAD_GLSL } from '/song/lib/x-v4-head.js';
+import { SNAKE_GLSL } from '/song/lib/x-v4-snake.js';
 
 const EZ = -3.6;   // the empire stands behind the fire
+// the three snakes: where each rises (x, z), heading (3/4 toward the camera), length, radius, head
+// height, phase; base = the tail end of the ground body in snakeRear's frame
+const SNAKES = [
+  { rise: [-1.45, 0.6], yaw: 0.3, turn: 1.0, L: 3.0, R: 0.125, h: 1.3, ph: 0.0 },
+  { rise: [0.1, 0.95], yaw: 1.05, turn: 0.45, L: 3.3, R: 0.13, h: 1.5, ph: 2.0 },
+  { rise: [1.5, 0.55], yaw: 2.85, turn: -1.05, L: 2.9, R: 0.12, h: 1.2, ph: 4.0 },
+].map((c) => {
+  const Lg = Math.max(c.L - 1.45 * c.h, 0.35 * c.L);
+  return { ...c, Lg };
+});
 
 export default (P) => {
   const t0 = P.from;
@@ -28,8 +43,8 @@ export default (P) => {
   };
   return {
     name: 's21-vipers3', from: P.from, to: P.to,
-    frag: '#define FIRE\n' + STUDIO_GLSL + FLAME_GLSL + CYBER_GLSL + EMPIRE_GLSL + VIPER_GLSL + XB_GLSL + /* glsl */ `
-uniform float uFireH, uTear, uFlash, uBlind;
+    frag: '#define FIRE\n' + STUDIO_GLSL + FLAME_GLSL + CYBER_GLSL + EMPIRE_GLSL + POST_GLSL + HEAD_GLSL + VIPER_GLSL + XB_GLSL + SNAKE_GLSL + /* glsl */ `
+uniform float uFireH, uTear, uFlash, uBlind, uGape;
 const vec3 SCR = vec3(2.35, 1.9, -2.2);   // face screens at (±x, y, z)
 float mapObj(vec3 p, out int id) {
   float d = empireSDF((p - vec3(0.0, 0.0, ${EZ.toFixed(2)})) / 1.5, id) * 1.5;
@@ -42,23 +57,24 @@ float mapObj(vec3 p, out int id) {
   vec3 c = p - vec3(0.0, 3.2, -1.6);
   c.z = mod(c.z + 0.6, 1.2) - 0.6;
   v = sdCapsule(c, vec3(-4.0, 0.0, 0.0), vec3(4.0, 0.0, 0.0), 0.05); if (v < d) { d = v; id = 41; }
-  float b = length(p - vec3(0.0, 1.0, 0.5)) - 2.2;
+  float b = length(p - vec3(0.0, 1.2, -0.1)) - 3.4;
   if (b > 0.3) return min(d, b);
-  float T = uTime;
-  for (int k = 0; k < 3; k++) {
-    float fk = float(k);
-    vec3 base = vec3(-1.25 + 1.25 * fk, 0.0, 0.45 + 0.35 * abs(fk - 1.0));
-    vec3 q2 = p - base;
-    float side = fk < 1.5 ? 1.0 : -1.0;
-    vec3 lq = vec3(q2.y, q2.x * side, q2.z);
-    float H = 1.5 + 0.35 * sin(fk * 2.1 + 0.5);
-    float vv = sdViper(lq, H, 0.14, 0.26, 2.2, T * 1.5 + fk * 2.0, 0.55, 2.5, vec3(1, 0, 0));
-    if (vv < d) { d = vv; id = 1; keepViper(); }
-  }
+  gSkFlick = uGape > 0.05 ? pow(max(0.0, sin(uTime * 22.0)), 2.0) : -1.0;
+  // each neck pivots about the point where it rises: on "fire?" the heads swing toward the camera
+${SNAKES.map((c) => `  { float yw = ${c.yaw.toFixed(3)} + ${c.turn.toFixed(3)} * uGape;
+    vec3 bs = vec3(${c.rise[0].toFixed(3)}, 0.0, ${c.rise[1].toFixed(3)}) - vec3(cos(yw), 0.0, sin(yw)) * ${c.Lg.toFixed(4)};
+    v = snakeRear(p, bs, yw, ${c.L.toFixed(3)}, ${c.R.toFixed(3)}, ${c.h.toFixed(3)}, ${c.ph.toFixed(2)}, uGape, 0.0); if (v < d) { d = v; id = 1; keepSnake(); } }`).join('\n')}
   return d;
 }
 Mat material(int id, vec3 p, vec3 n) {
-  if (id == 1) return viperMat(0.0);
+  if (id == 1) {
+    gSkEye = vec3(3.4, 0.25, 1.6);   // hot magenta slits
+    Mat m = snakeMat(p, n, 0.0);
+    // a thin ember rim from the fire behind, so the heads cut out against the glow
+    float fr = pow(1.0 - sat(dot(n, normalize(uCamPos - p))), 4.0);
+    m.emit += vec3(1.2, 0.35, 0.12) * fr * 0.6;
+    return m;
+  }
   if (id == 41) { Mat m = M(vec3(0.08, 0.08, 0.09), 0.35, 0.8); return dirty(m, p, 0.6); }
   if (id == 40) {
     Mat m = M(vec3(0.02), 0.2, 0.0);
@@ -67,15 +83,17 @@ Mat material(int id, vec3 p, vec3 n) {
     if (q.z > 0.03) {
       float s = p.x > 0.0 ? 1.0 : -1.0;
       vec2 uv = q.xy / vec2(0.6, 0.76);
-      // the faces smile out over the fire; on kicks they tear sideways, on "fire?" they go blind
-      uv.x += (hash12(vec2(floor(uv.y * 12.0), floor(uTime * 30.0))) - 0.5) * 0.3 * uTear;
+      // contour-scan faces watch over the fire; on kicks their rows slip sideways (macroblock slip),
+      // on "fire?" they go blind: the contour lines die
+      float slip = (hash12(vec2(floor(uv.y * 6.0), floor(uTime * 30.0))) - 0.5) * 0.25 * uTear;
+      uv.x += slip;
       vec3 ink = s > 0.0 ? vec3(1.6, 0.25, 1.0) : vec3(0.4, 1.6, 0.5);
-      m.emit = faceScreen(uv, 0.7 - 1.2 * uBlind, uBlind, s > 0.0 ? 3.0 : 11.0, ink, 34.0) * 1.3;
+      float die = 1.0 - uBlind * (0.85 + 0.15 * step(0.5, hash12(vec2(floor(uTime * 24.0), s))));
+      m.emit = faceScan(uv * 1.08, -0.18 * s, 0.0, 0.0, 1.0, ink) * 1.3 * die;
     }
     return m;
   }
-  Mat m = empireMat(id, (p - vec3(0.0, 0.0, ${EZ.toFixed(2)})) / 1.5, n);
-  return dirty(m, p, 0.5);
+  return empireMatPost(id, (p - vec3(0.0, 0.0, ${EZ.toFixed(2)})) / 1.5, n);
 }
 float fireDen(vec3 p) {
   if (p.z > -0.4 || p.z < -2.6 || p.y > uFireH * 1.6) return 0.0;
@@ -93,13 +111,13 @@ vec3 shade(vec2 fc) {
   return col;
 }`,
     uniforms: {
-      ...STUDIO_UNIFORMS, ...empireUniforms(),
+      ...STUDIO_UNIFORMS, ...empireUniforms(), ...POST_UNIFORMS,
       uCycA: rgb('96, 30, 40', 1.3), uCycB: rgb('26, 8, 30', 1.2),
       uFloorCol: rgb('80, 76, 80', 0.8), uFloorRough: 0.08, uGrime: 0.85,
       uKeyDir: [0.2, 0.7, -0.8], uKeyCol: [2.4, 1.1, 0.6], uKeySize: 0.6, uExpo: 1.0,
       uRimA: [2.6, 0.7, 1.4], uRimB: [2.6, 0.9, 0.3],
       uHaze: 0.05, uHazeCol: [0.1, 0.035, 0.04],
-      uFireH: 1.6, uGlow: 0.6, uTear: 0, uFlash: 0, uBlind: 0,
+      uFireH: 1.6, uGlow: 0.6, uTear: 0, uFlash: 0, uBlind: 0, uGape: 0,
     },
     camera,
     textPlane(t, cam) { return { c: [0, 0, 0], ax: [1, 0, 0], ay: [0, 1, 0], hs: [0, 0] }; },
@@ -109,6 +127,8 @@ vec3 shade(vec2 fc) {
       u.uTear.value = tearAt(t);
       u.uFlash.value = 0.85 * (1 - ease.out3((t - t0) / 0.3));
       u.uBlind.value = ease.out3((t - tF) / 0.25);
+      u.uGape.value = spring(t, tF - 0.04, 0.35, 0.15);
+      u.uPostBurn.value = 0.25 + 0.35 * ease.inOut3((t - t0) / (tF - t0)) + 0.35 * leap;
       const v = towerState(t, {});
       const sw = leap * 0.05 * Math.sin((t - tF) * 5.0) * clamp01((t - tF) / 0.5);
       for (let k = 0; k < 8; k++) v[k * 4 + 2] = sw * (k % 2 ? 1 : -0.8);

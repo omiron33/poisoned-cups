@@ -55,9 +55,9 @@ export default (P) => {
     shade: 0.7,
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
-      carryWide(ctx, t, P);   // carry(ctx, t, P) with wider spacing
+      // v4: no carried s15 line (no previous-scene words, V4-DIRECTION 3.1)
       const out = outFade(t, P.to - 0.3, P.to - 0.02);
-      header(ctx, t, L1.words[0].start, 250, 660, 200, 'DOSSIER 16  ·  THREAT CLASS: VIPER', out);
+      header(ctx, t, L1.words[0].start, 250, 660, 200, 'DOSSIER 16  ·  THREAT: VIPER', out);
       arm(ctx, L1.words, t, scan, { x: 250, y: 660, px: 200, maxW: 2000, ground: 'dark', alpha: out });
       if (t >= tSee) note(ctx, 'FACES 03  ·  STATUS: FROZEN', 3590, 250, { px: 40, align: 'right', alpha: 0.85 * out * clamp01((t - tSee) / 0.15), color: '255, 120, 190' });
       // the question, low left

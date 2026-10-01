@@ -13,7 +13,7 @@ import { grade, rgb, ease, clamp, orbit, mix } from '/song/lib/look.js';
 import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { CUP_GLSL } from '/song/lib/x-cup.js';
-import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-a.js';
+import { HALL_GLSL, HALL_UNIFORMS } from '/song/lib/x-v4-hall.js';
 
 // v3: the opening camera move after the cut: a small dolly-in that eases in and settles over
 // ~0.6 s (36 frames), so the shot never lands on a dead stop just after the cut

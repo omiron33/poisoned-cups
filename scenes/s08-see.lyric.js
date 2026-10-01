@@ -26,7 +26,7 @@ export default (P) => {
       // the threat-class header, lifted clear of the caps (lib dossier() sets its bar touching them),
       // then the words laid out exactly as dossier() lays them
       if (t >= L1.words[0].start - 0.4) {
-        const px = 200, k = ease.out3((t - (L1.words[0].start - 0.4)) / 0.25), head = 'THREAT CLASS 4  ·  BROOD  ·  06 UNITS';
+        const px = 200, k = ease.out3((t - (L1.words[0].start - 0.4)) / 0.25), head = 'THREAT LEVEL 4  ·  BROOD  ·  06 UNITS';
         ctx.font = `800 ${Math.round(px * 0.26)}px "JetBrains Mono"`; ctx.letterSpacing = `${px * 0.05}px`;
         const hw = ctx.measureText(head).width;
         ctx.fillStyle = `rgba(150, 255, 110, ${(0.9 * k * out).toFixed(3)})`;

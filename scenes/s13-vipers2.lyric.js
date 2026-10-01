@@ -32,9 +32,7 @@ export default (P) => {
     shade: 0.9,
     textPlane(t, cam) { return cameraPlane(cam, { width: 1, dist: 1, aspect: 16 / 9 }); },
     drawText(ctx, t) {
-      // "gate" (s12) is sung across the cut: hold s12's last line exactly where s12 set it (bottom
-      // centre) so GATE does not jump at the cut, then fade it (carry()'s timing)
-      holdGate(ctx, t);
+      // v4: s12's line is no longer held across the cut (no previous-scene words, V4-DIRECTION 3.1)
       const out = outFade(t, P.to - 0.3, P.to);
       // placement pass: the hook dims back once the question starts, so the current line dominates
       const o = { ground: 'dark', alpha: out * (1 - 0.55 * clamp01((t - (body[0].start - 0.1)) / 0.25)), echo: false };

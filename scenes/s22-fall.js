@@ -1,4 +1,6 @@
 // 22 · "Turn your hearts / Let the proud dreams fall and tire"
+// v4 SWAP: the towers are s06's post towers (lib/x-v4-post.js empireMatPost): their post cards tear
+// into static and go dark as they tip. No fibre antenna any more (s06 v4 has none).
 // The control room of s06 (lib/x-empire.js skinned by lib/x-d.js): the same towers of dashboard
 // screens wrapped in graph lines and map skins, the LED wall of dashboards behind, and a central
 // core column that has only ever glowed cold. Outside: close on the stacked screens, all charts
@@ -12,6 +14,7 @@ import { STUDIO_GLSL, STUDIO_UNIFORMS } from '/song/lib/studio.js';
 import { EMPIRE_GLSL, empireUniforms, towerState, TOWERS, SH } from '/song/lib/x-empire.js';
 import { CYBER_GLSL } from '/song/lib/x-cyber.js';
 import { DASH_GLSL, DASH_UNIFORMS } from '/song/lib/x-d.js';
+import { POST_GLSL, POST_UNIFORMS } from '/song/lib/x-v4-post.js';
 
 const [LT, LP] = linesFrom('Turn your hearts', 'Let the proud dreams fall and tire');
 const setV = (u, k, a) => { const v = u[k].value; if (v && v.set) v.set(...a); else u[k].value = a; };
@@ -67,7 +70,7 @@ export default (P) => {
   const impacts = fall.map(([, ts]) => ts + tl);
   return {
     name: 's22-fall', from: P.from, to: P.to,
-    frag: STUDIO_GLSL + CYBER_GLSL + EMPIRE_GLSL + DASH_GLSL + /* glsl */ `
+    frag: STUDIO_GLSL + CYBER_GLSL + EMPIRE_GLSL + DASH_GLSL + POST_GLSL + /* glsl */ `
 uniform float uTear;
 float mapObj(vec3 p, out int id) {
   float d = empireSDF(p, id);
@@ -84,7 +87,7 @@ Mat material(int id, vec3 p, vec3 n) {
   if (id == 50) return dashWallMat(p);
   if (id == 51) return coreMat(p);
   if (id >= 60) return shardMat(id - 60);
-  return dashSlabMat(id, p, n);
+  return empireMatPost(id, p, n);
 }
 vec3 shade(vec2 fc) {
   fc = glitchTear(fc, uTear);
@@ -102,7 +105,8 @@ vec3 shade(vec2 fc) {
       uHaze: 0.05, uHazeCol: [0.07, 0.05, 0.1],
       ...empireUniforms(),
       ...DASH_UNIFORMS,
-      uBoundX: 1.9,
+      uBoundX: 1.9, uFibLo: -1.0, uFibHi: -1.0, uFibFollow: 1,
+      ...POST_UNIFORMS,
       uTear: 0,
     },
     camera: fallCamera(P),
