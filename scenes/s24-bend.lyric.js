@@ -49,7 +49,7 @@ export default (P) => {
       // whatever is left of the span goes into the word gaps
       let gap = px * 0.6;
       const need = (R - L) - base.reduce((a, b) => a + b, 0) - gap * (words.length - 1);
-      const perChar = Math.min(0.05, need / words.reduce((a, w) => a + chars(w) * size(w), 0));
+      const perChar = 0;   // no letter tracking: tracked italic BEND parted into letters (failed OCR)
       gap = Math.min(px * 0.8, gap + (need - perChar * words.reduce((a, w) => a + chars(w) * size(w), 0)) / Math.max(1, words.length - 1));   // wide, but IF still reads as part of the line
       let sx = L;
       words.forEach((w, i) => {

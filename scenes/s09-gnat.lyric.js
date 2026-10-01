@@ -67,7 +67,7 @@ export default (P) => {
       const fade = outFade(t, P.to - 0.04, P.to + 0.01);
       const [wLet, wThe, wCamel, wThr] = L2.words;
       arm(ctx, [wLet, wThe], t, strike, { x: 240, y: 430, px: 210, alpha: fade, flash: false, shake: 0.4 });
-      const cpx = 720;
+      const cpx = 600;   // huge but inside the reader's grasp (was 720)
       const cadv = measure(ctx, wCamel.w, cpx, {}) - cpx * 0.26;
       strike(ctx, wCamel, t, 1920 - cadv / 2, 1640, cpx, { alpha: fade, from: 1.4, rot: 0.02, flash: false, shake: 0.35 });
       if (wThr) { const tw = measure(ctx, wThr.w, 270, {}) - 270 * 0.26; ghost(ctx, wThr, t, 3600 - tw, 1990, 270, { alpha: fade, dir: -1 }); }

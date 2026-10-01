@@ -40,7 +40,7 @@ export default (P) => {
       // the column beside it (the next rotated line), not split across the frame
       const bw = up(ctx, term, brood, t, 520, 1960, 370, o);   // clear of the held s12 line at the cut
       up(ctx, term, of, t, 520, 1960 - bw - 200, 370, o);
-      up(ctx, term, vipers, t, 520 + 370 * 1.32, 1960, 370, o);
+      up(ctx, term, vipers, t, 520 + 370 * 1.62, 1960, 370, o);   // a wider column gap: VIPERS' cursor crowded BROOD
       // the question: a scanned readout across the middle
       const qpx = 112;
       let tw = 0; for (const w of body) tw += measure(ctx, w.w, qpx);
@@ -64,7 +64,7 @@ export default (P) => {
         ctx.fillStyle = `rgba(255, 240, 220, ${(0.95 * k * out).toFixed(3)})`; ctx.fillRect(lim, gy - 14, 5, 44);
         if (u >= 0) {
           const fpx = 250, fw = measure(ctx, fire.w, fpx) - fpx * 0.26;
-          volt(ctx, fire, t, (x0 + x1) / 2 - fw / 2, y1 - 40, fpx, { ground: 'dark', alpha: out, ink: '255, 206, 170' });
+          volt(ctx, fire, t, (x0 + x1) / 2 - fw / 2, y1 - 40, fpx, { ground: 'dark', alpha: out, ink: '255, 232, 214' });
         }
       }
       note(ctx, 'GATE 02  ·  THERMAL RUNAWAY  ·  MATT 23:33', 1920, 250, { px: 40, align: 'center', alpha: 0.8 * out });

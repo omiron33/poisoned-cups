@@ -66,10 +66,10 @@ export default (P) => {
       for (const w of L2.words) {
         const k = keyOf(w.w);
         if (k === 'i') { x += 10; x += descend(ctx, w, t, x, y, 180, { ground: 'dark', alpha: out }); x += 30; continue; }
-        if (k.startsWith('see')) { x += 150;   // clear room: SEE revealing beside CAN'T must not read as CAN'T moving
+        if (k.startsWith('see')) { x += 320;   // clear room: SEE revealing beside CAN'T must not read as CAN'T moving
           x += descend(ctx, w, t, x, y, 400, { ground: 'dark', alpha: out, voice: VOICES.divine }); x += 30; continue; }
-        if (t >= w.start - 0.02) paint(ctx, w.w, x, y, 120, { ground: 'dark', alpha: out * clamp01((t - w.start + 0.02) / 0.06) });
-        x += measure(ctx, w.w, 120);
+        if (t >= w.start - 0.02) paint(ctx, w.w, x, y, 140, { ground: 'dark', alpha: out * clamp01((t - w.start + 0.02) / 0.06) });
+        x += measure(ctx, w.w, 140) + 140 * 0.08;
       }
     },
   };

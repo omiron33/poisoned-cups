@@ -95,10 +95,10 @@ export default (P) => {
       const end = outFade(t, R.tBlack - 0.1, R.tBlack - 0.01);
       if (t >= soYour[0].start - 0.02) {
         const o = { ground: 'dark', alpha: end };
-        const px = 112;
-        const tw = soYour.reduce((s, w) => s + measure(ctx, w.w, px, o), 0) - px * 0.26;
+        const px = 170, gap = px * 0.2;   // SO was too small to read (was 112)
+        const tw = soYour.reduce((s, w) => s + measure(ctx, w.w, px, o) + gap, 0) - gap - px * 0.26;
         let x = 1920 - tw / 2;
-        for (const w of soYour) x += rise(ctx, w, t, x, 1330, px, o);
+        for (const w of soYour) x += rise(ctx, w, t, x, 1330, px, o) + gap;
       }
       const cold = { voice: COLD, ground: 'dark', alpha: end };
       const dw = measure(ctx, dark.w, 340, cold) - 340 * 0.26;

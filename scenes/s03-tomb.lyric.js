@@ -60,7 +60,7 @@ export default (P) => {
         note(ctx, 'UNIT 03  ·  MONOLITH  ·  CLEAN ROOM WHITE  ·  MATT 23:27', 260, 1880, { px: 32, color: '30, 34, 44', rule: 700, alpha: 0.85 * f1 });
       }
       // ---- inside: machine labels on leaders
-      const f2 = outFade(t, P.to - 0.25, P.to);
+      const f2 = outFade(t, P.to - 0.03, P.to);   // BONES holds to the cut (end + 0.2 s)
       const c = cam(t);
       const spots = [[300, 640], [1320, 1180], [1900, 1760]];
       L2.words.forEach((w, i) => {

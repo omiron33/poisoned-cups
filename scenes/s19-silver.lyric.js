@@ -67,9 +67,9 @@ export default (P) => {
       const a1b = outFade(t, tB + 0.17, tB + 0.3);
       if (a1b > 0.002) {
         metal(ctx, L1.words[0], t, 240, 560, 330, a1);
-        flow(ctx, L1.words.slice(1), t, { x: 250, y: 900, px: 200, ground: 'light', alpha: a1b, rise: 0 });   // IN large and still from its onset
+        flow(ctx, L1.words.slice(1), t, { x: 250, y: 930, px: 240, ground: 'light', alpha: a1b, rise: 0 });   // IN large and still from its onset
         const paid = Math.floor(1000 * Math.max(0, t - L1.words[0].start) ** 1.6 * 37);
-        if (t > L1.words[0].start) note(ctx, 'PAYOUT  ' + paid.toLocaleString('en-US').padStart(9, ' ') + ' CR', 250, 1060, { px: 34, ground: 'light', alpha: 0.9 * a1 });
+        if (t > L1.words[0].start) note(ctx, 'PAYOUT  ' + paid.toLocaleString('en-US').padStart(9, ' ') + ' CR', 250, 1090, { px: 34, ground: 'light', alpha: 0.9 * a1 });
       }
       // BLOOD, and its reflection smearing as the spill runs
       const smear = ease.inOut3((t - tB - 0.3) / 2.2);

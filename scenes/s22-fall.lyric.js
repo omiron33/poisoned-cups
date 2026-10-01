@@ -58,8 +58,8 @@ export default (P) => ({
     // TURN YOUR HEARTS
     // the mercy italic set in capitals: in lower case the italic h of "hearts" read as a b
     const MERCY = { ...VOICES.mercy, caps: true, track: 0.05 };
-    const mpx = 170;
-    const dimT = 1 - 0.55 * clamp01((t - LP.words[0].start + 0.05) / 0.2);   // the previous line steps back
+    const mpx = 190;   // larger (was 170): TURN and YOUR failed to read over the towers
+    const dimT = 1 - 0.55 * clamp01((t - LP.words[0].start - 0.05) / 0.2);   // the previous line steps back (after HEARTS' end + 0.2 s)
     let x = 250;
     for (const w of LT.words) {
       const s = arrive(w, t, 0.1);
@@ -71,7 +71,7 @@ export default (P) => ({
     const rest = LP.words.slice(4);
     // the claim capitals one weight up (300 broke up over the busy towers)
     const claim = { ...VOICES.claim, font: (px) => `500 ${px}px "Inter Tight"` };
-    const bpx = 128, by = 1230, bx = 290;
+    const bpx = 150, by = 1230, bx = 290;   // larger (was 128): THE failed over the towers
     const dreams = words[3];
     const c = ease.in2(clamp01((t - (dreams.end + 0.2)) / 0.7));
     const gap = bpx * 0.3;
@@ -86,7 +86,7 @@ export default (P) => ({
         ctx.beginPath(); ctx.moveTo(ax, ay + (i % 2 ? d : 0)); ctx.lineTo(bx2, by2 + (i % 2 ? 0 : d)); ctx.stroke();
       };
       side(x0, y0, x1, y0, 0); side(x1, y0, x1, y1, 1); side(x1, y1, x0, y1, 2); side(x0, y1, x0, y0, 3);
-      note(ctx, 'ROADMAP  ·  SUPERINTELLIGENCE 2030  ·  APPROVED', x0, y0 - 28, { px: 34, color: '226, 232, 244', alpha: 0.8 * k * fade * (1 - 0.5 * c) });
+      note(ctx, 'ROADMAP  ·  SUPERINTELLIGENCE 2030  ·  APPROVED', x0, y0 - 60, { px: 34, color: '226, 232, 244', alpha: 0.8 * k * fade * (1 - 0.5 * c) });
     }
     let wx = bx;
     words.forEach((w, i) => {

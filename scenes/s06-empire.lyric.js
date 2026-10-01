@@ -35,7 +35,15 @@ function postOn(ctx, cam, c, s, tip, yaw, post, t, alpha) {
   const v = [cam.pos[0] - c[0], cam.pos[1] - c[1], cam.pos[2] - c[2]];
   if (n[0] * v[0] + n[1] * v[1] + n[2] * v[2] <= 0) return;
   onSurface(ctx, cam, o, rot([1, 0, 0], tip, yaw), rot([0, 1, 0], tip, yaw), (2 * hs[0] * s) / CW,
-    () => drawPost(ctx, 0, 0, CW, post, t, { h: CW * hs[1] / hs[0], px: CW * 0.085, alpha }));
+    () => withHandleDrop(ctx, CW * 0.085 * 0.22, () => drawPost(ctx, 0, 0, CW, post, t, { h: CW * hs[1] / hs[0], px: CW * 0.085, alpha })));
+}
+
+// drawPost sets the handle line close under the name; on a tipped card the two read as one block.
+// The lib also feeds the picture, so the extra gap is added here: the handle line drops by dy.
+function withHandleDrop(ctx, dy, draw) {
+  const fill = ctx.fillText;
+  ctx.fillText = function (s, x, y, ...rest) { return fill.call(this, s, x, String(s).startsWith('@') ? y + dy : y, ...rest); };
+  try { draw(); } finally { ctx.fillText = fill; }
 }
 
 // TWIST: each letter turned about the baseline (a helix through the row) untwisting in 0.1 s
@@ -105,7 +113,7 @@ export default (P) => ({
       const ww = measure(ctx, w.w, px, o) - px * 0.26;
       const v = o.voice ?? voiceOf(w.w);
       const capH = Math.round(px * v.scale) * 0.74;
-      const padX = px * 0.32, padY = px * 0.26;
+      const padX = px * 0.45, padY = px * 0.3;   // more air between the word and its chip edge (OCR)
       const cw = ww + padX * 2, ch = capH + padY * 2;
       const x0 = x2;
       x2 += cw + Math.max(40, px * 0.3);
@@ -114,7 +122,7 @@ export default (P) => ({
       const a = clamp01(k * 1.6) * end;
       const dy = (1 - k) * -px * 0.5;
       const top = base - capH - padY + dy;
-      ctx.fillStyle = `rgba(11, 12, 16, ${(0.88 * a).toFixed(3)})`;
+      ctx.fillStyle = `rgba(11, 12, 16, ${(0.96 * a).toFixed(3)})`;
       ctx.fillRect(x0, top, cw, ch);
       ctx.strokeStyle = `rgba(200, 206, 222, ${(0.75 * a).toFixed(3)})`; ctx.lineWidth = 3;
       ctx.strokeRect(x0 + 1.5, top + 1.5, cw - 3, ch - 3);

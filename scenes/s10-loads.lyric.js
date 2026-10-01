@@ -47,15 +47,16 @@ export default (P) => { const cam = loadsCamera(P); const { tLoads, tThat } = lo
         note(ctx, txt, q.x, q.y + 12, { px: 34, align: 'center', color: '226, 232, 244', alpha: la });
       }
     }
-    const lpx = 140, ly = 300, xr = 3600;
-    const claim = VOICES.claim;
-    const total = LN.words.reduce((a, w) => a + measure(ctx, w.w, lpx, { voice: claim }), 0) - lpx * 0.26;
+    // heavier claim weight, larger, and wider word gaps: the light strokes broke up (NEVER failed OCR)
+    const lpx = 165, ly = 300, xr = 3600, gap = lpx * 0.2;
+    const claim = { ...VOICES.claim, font: (px) => `500 ${px}px "Inter Tight"` };
+    const total = LN.words.reduce((a, w) => a + measure(ctx, w.w, lpx, { voice: claim }) + gap, 0) - gap - lpx * 0.26;
     let lx = xr - total, liftX = 0, liftW = 0;
     for (const w of LN.words) {
       const adv = measure(ctx, w.w, lpx, { voice: claim });
       scan(ctx, w, t, lx, ly, lpx, { voice: claim, alpha: fade });
       if (/lift/i.test(w.w)) { liftX = lx; liftW = adv - lpx * 0.26; }
-      lx += adv;
+      lx += adv + gap;
     }
     const wl = LN.words.find((w) => /lift/i.test(w.w));
     if (t > wl.start) {

@@ -45,7 +45,8 @@ export default (P) => {
       const o2 = { ground: 'dark', alpha: end, flash: false, shake: 0.35 };
       const px = 178, small = 112, y2 = 1900;
       const sz = (w) => (keyOf(w.w) === 'a' ? small : px);
-      const total = L2.words.reduce((s, w) => s + measure(ctx, w.w, sz(w), o2), 0) - px * 0.26;
+      const gap = px * 0.2;   // explicit word gaps: BUT and YOUR read as one word
+      const total = L2.words.reduce((s, w) => s + measure(ctx, w.w, sz(w), o2) + gap, 0) - gap - px * 0.26;
       let x = 1920 - total / 2;
       if (t >= L2.words[0].start - 0.02) {
         const k = clamp01((t - L2.words[0].start + 0.02) / 0.08);
@@ -60,7 +61,7 @@ export default (P) => {
         const s = sz(w);
         const fn = k === 'but' || k === 'call' ? strike : k === 'your' || k === 'tongues' || k === 'liar' ? glitch : scan;
         fn(ctx, w, t, x, y2, s, o2);
-        x += measure(ctx, w.w, s, o2);
+        x += measure(ctx, w.w, s, o2) + gap;
       }
       // ---- secondary: what it is really thinking ----
       const tTh = R.tBut + 0.45;   // after the title has gone
@@ -85,18 +86,18 @@ export default (P) => {
         ctx.rotate(-0.07 * s);
         ctx.scale(1 + (1 - s) * 0.6, 1 + (1 - s) * 0.6);
         ctx.font = '800 40px "JetBrains Mono"'; ctx.letterSpacing = '8px';
-        const w1 = ctx.measureText('FACT-CHECK:').width;
+        const w1 = ctx.measureText('FACT CHECK:').width;
         ctx.font = '800 118px "JetBrains Mono"'; ctx.letterSpacing = '14px';
         const w2 = ctx.measureText('FALSE').width;
         const bw = Math.max(w1, w2) + 70;
         ctx.fillStyle = `rgba(20, 4, 12, ${(0.55 * a).toFixed(3)})`;
-        ctx.fillRect(-bw / 2, -150, bw, 210);
+        ctx.fillRect(-bw / 2, -200, bw, 260);
         ctx.strokeStyle = `rgba(${MAG}, ${a.toFixed(3)})`; ctx.lineWidth = 9;
-        ctx.strokeRect(-bw / 2, -150, bw, 210);
+        ctx.strokeRect(-bw / 2, -200, bw, 260);
         ctx.fillStyle = `rgba(${MAG}, ${a.toFixed(3)})`;
         ctx.fillText('FALSE', -w2 / 2 + 7, 32);
         ctx.font = '800 40px "JetBrains Mono"'; ctx.letterSpacing = '8px';
-        ctx.fillText('FACT-CHECK:', -w1 / 2 + 4, -96);
+        ctx.fillText('FACT CHECK:', -w1 / 2 + 4, -132);   // clear of FALSE (≥0.3 × its size)
         ctx.restore(); ctx.letterSpacing = '0px';
       }
     },

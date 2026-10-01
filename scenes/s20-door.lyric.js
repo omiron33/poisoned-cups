@@ -26,7 +26,7 @@ export default (P) => {
       const door = outFade(t, tOr - 0.04, tOr);
       // 1 · down the dark wall left of the door, flush right against a hairline rule
       if (jamb > 0.002) {
-        const px = 165, lead = px * 1.3, xr = 1150;
+        const px = 190, lead = px * 1.3, xr = 1150;   // IN large enough to read (was 165)
         L1.words.forEach((w, i) => {
           const wd = measure(ctx, w.w, px) - px * 0.26;
           cascade(ctx, w, t, xr - wd, 1430 - (L1.words.length - 1 - i) * lead, px, { alpha: jamb });
@@ -91,7 +91,7 @@ export default (P) => {
         prompts.forEach((s, i) => {
           if (t < beats[i]) return;
           const kk = ease.out5((t - beats[i]) / 0.1);
-          const yy = 300 + i * 80;
+          const yy = 300 + i * 125;   // clear line spacing between the two prompts
           ctx.fillStyle = `rgba(255, 92, 170, ${(0.95 * kk * end).toFixed(3)})`; ctx.fillRect(2560, yy - 32, 8, 38);
           note(ctx, '× ' + s, 2590, yy, { px: 38, alpha: 0.85 * kk * end, color: '255, 150, 200' });
         });

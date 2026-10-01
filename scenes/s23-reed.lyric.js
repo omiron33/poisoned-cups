@@ -16,6 +16,8 @@ const soft = (ctx, w, t, x, y, px, o, P) => {
   return paint(ctx, w.w, x, y + (1 - k) * (1 - k) * px * 0.1, px, { ...o, alpha: k * (o.alpha ?? 1) });
 };
 
+const A_VOICE = { ...VOICES.mercy, font: (px) => `600 ${px}px "EB Garamond"` };
+
 export default (P) => {
   const [L1, L2] = lines23(P);
   const R = rig(P);
@@ -31,16 +33,17 @@ export default (P) => {
       const rows = [[L1.words[0], L1.words[1]], [L1.words[2]], [L1.words[3]]];
       rows.forEach((row, r) => {
         let x = 280 + r * 130 + r * r * 40;
-        for (const w of row) { const big = /^a$/i.test(w.w); x += soft(ctx, w, t, x, 430 + r * 240, big ? 250 : 190, dim1, P) + (big ? 190 * 0.4 : 190 * 0.12); }
+        // A upright (an italic A alone failed OCR) and at the row's size, so A and CRACKED read as one line
+        for (const w of row) { const big = /^a$/i.test(w.w); x += soft(ctx, w, t, x, 430 + r * 240, 190, big ? { ...dim1, voice: A_VOICE } : dim1, P) + 190 * (big ? 0.3 : 0.12); }
       });
       // "I will never crush or kill", steady along the bottom right
-      const pxI = 215, px = 170;
+      const pxI = 225, px = 190, gap = px * 0.15;   // larger, with word gaps (NEVER failed over the lit floor)
       const I = L2.words[0], rest = L2.words.slice(1);
       const wI = measure(ctx, I.w, pxI, { ground: 'dark' });
-      const wr = rest.reduce((s, w) => s + measure(ctx, w.w, px, mercy), 0) - px * 0.26;
-      let x = 3600 - (wI + px * 0.1 + wr);
-      x += soft(ctx, I, t, x, 1930, pxI, { ground: 'dark', alpha: a }, P);
-      for (const w of rest) x += soft(ctx, w, t, x, 1930, px, mercy, P);
+      const wr = rest.reduce((s, w) => s + measure(ctx, w.w, px, mercy) + gap, 0) - gap - px * 0.26;
+      let x = 3600 - (wI + gap + wr);
+      x += soft(ctx, I, t, x, 1930, pxI, { ground: 'dark', alpha: a }, P) + gap;
+      for (const w of rest) x += soft(ctx, w, t, x, 1930, px, mercy, P) + gap;
       // the system's note by the arm, placed where the wrist is on "bruised"; it flickers out on "I"
       if (t >= R.tBruised) {
         const cam = R.camera(R.tBruised);

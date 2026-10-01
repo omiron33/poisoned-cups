@@ -16,6 +16,8 @@ const [wWhile, wThe, wWidow, wPays] = L2.words;
 const HEAD = 'AI GIVING GUIDE · RATED 4.9 / 5';
 const LBL = [1500, 1900];   // canvas position of the shot-B label (beside the kiosk, over the dark street)
 
+// the UX voice at a heavier weight: the light strokes broke up in the encode (GUIDES failed OCR)
+const UXV = { ...VOICES.claim, font: (px) => `500 ${px}px "Inter Tight"` };
 // a word in the kiosk's UX voice, crisp; after 0.3 s colour plates start to slide out behind it
 function ux(ctx, w, t, x, y, px, alpha) {
   if (t < w.start - 0.02) return;
@@ -23,10 +25,10 @@ function ux(ctx, w, t, x, y, px, alpha) {
   const c = ease.inOut3((t - w.start - 0.3) / 1.0);
   if (c > 0) {
     const d = px * (0.02 + 0.05 * c);
-    paint(ctx, w.w, x - d, y, px, { voice: VOICES.claim, ink: '255, 60, 170', alpha: 0.4 * c * a });
-    paint(ctx, w.w, x + d, y + d * 0.3, px, { voice: VOICES.claim, ink: '90, 255, 120', alpha: 0.35 * c * a });
+    paint(ctx, w.w, x - d, y, px, { voice: UXV, ink: '255, 60, 170', alpha: 0.4 * c * a });
+    paint(ctx, w.w, x + d, y + d * 0.3, px, { voice: UXV, ink: '90, 255, 120', alpha: 0.35 * c * a });
   }
-  paint(ctx, w.w, x, y, px, { voice: VOICES.claim, alpha: a });
+  paint(ctx, w.w, x, y, px, { voice: UXV, alpha: a });
 }
 
 const PAPER = '240, 238, 230', INKD = '22, 20, 26';
@@ -77,7 +79,7 @@ export default (P) => ({
     // the cut is hard: everything holds to the last two frames
     const out = outFade(t, P.to - 0.035, P.to);
     // shot A: the screen's right column; held to its end + 0.15, then dims and fades in the pull-back
-    const e1 = L1.words[2].end + 0.15;
+    const e1 = L1.words[2].end + 0.25;
     const a1 = t < e1 ? 1 : 0.45 * outFade(t, e1, wWhile.start + 0.45) + 0.55 * outFade(t, e1, e1 + 0.06);
     if (a1 > 0.002) {
       const px = 185, x = 2480;

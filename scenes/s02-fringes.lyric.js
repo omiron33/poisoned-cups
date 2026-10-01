@@ -55,7 +55,7 @@ export default (P) => {
       // ---- line 2: shrinking words under a narrowing trace, bottom left
       const t2 = L2.words[0].start;
       if (t >= t2 - 0.3) {
-        const sizes = [180, 165, 215, 150, 150];   // HEARTS (mercy italic) large enough to read cleanly
+        const sizes = [180, 165, 250, 150, 150];   // HEARTS (mercy italic) large enough to read cleanly
         let x = 240;
         const pos = L2.words.map((w, i) => { const a = x; x += measure(ctx, w.w, sizes[i]) + sizes[i] * 0.12; return a; });
         const xEnd = x;
@@ -80,8 +80,8 @@ export default (P) => {
           const px = sizes[i];
           if (keyOf(w.w) === 'thin') {
             // THIN lands and holds still (placement pass: no flatten after landing; the trace collapses)
-            term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false });
-          } else term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false });
+            term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false, ...(keyOf(w.w) === 'hearts' ? { ink: '246, 240, 255' } : {}) });
+          } else term(ctx, w, t, pos[i], 1880, px, { ground: 'dark', alpha: out, echo: false, ...(keyOf(w.w) === 'hearts' ? { ink: '246, 240, 255' } : {}) });
         });
       }
     },
