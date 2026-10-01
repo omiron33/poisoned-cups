@@ -2,7 +2,7 @@
 # Generate scene stills through the ChatGPT app's Codex (built-in image generation).
 #   tools/gen-art.sh p10 p11 ...   reads art/prompts/<id>.txt, writes art/<id>.png
 cd "${0:A:h}/../art"
-CODEX=/Applications/ChatGPT.app/Contents/Resources/codex
+CODEX=$(ls /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex /Applications/ChatGPT.app/Contents/Resources/codex 2>/dev/null | head -1)   # the ChatGPT app's bundled Codex (moves between app versions)
 for id in "$@"; do
   [ -f "$id.png" ] && { echo "$id exists"; continue; }
   prompt=$(cat "prompts/$id.txt")

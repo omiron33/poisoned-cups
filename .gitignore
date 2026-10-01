@@ -12,3 +12,4 @@ intake/
 # generated stills, their depth maps and clip frames stay local (art/prompts and art/motion are committed)
 art/*.png
 art/video/
+delivery/
