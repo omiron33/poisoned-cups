@@ -4,6 +4,10 @@ Scenes for a lyric film of *Poisoned Cups*, drawn entirely in code: no generated
 images. Every frame is a raymarched GPU shader (titanium and gold, wet concrete, fibre-optic cable,
 fire, haze) with the lyric set as its own layer, rendered at 1920×1080 and 60 fps.
 
+Built with the Ark engine: https://github.com/omiron33/ark-video-studio
+
+Listen and watch: [technochristianity.com/music](https://technochristianity.com/music) · [TechnoChristianity on YouTube](https://www.youtube.com/@technochristianity)
+
 The song is Matthew 23 for the machine age: Jesus' woes to the scribes and Pharisees, with today's
 technocrats as the brood of vipers. The film's grammar is outside and inside (23:25–27): every
 object is first shot polished, like a product launch, then the camera looks inside at what the
